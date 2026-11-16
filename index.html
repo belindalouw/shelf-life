@@ -73,6 +73,35 @@ h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
 .gen b{font:400 15px/1.15 var(--display);overflow-wrap:anywhere}
 .gen span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
 .out{visibility:hidden}
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#111a20;border-top:1px solid rgba(239,230,214,.14);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;color:var(--ink-dim);text-decoration:none;font-size:11px;font-weight:500;letter-spacing:.02em}
+nav.tabs a:hover{color:var(--ink)}
+nav.tabs a[aria-current=page]{color:var(--brass)}
+nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pane{max-width:820px;margin:0 auto;padding:28px 20px 30px}
+.pane .sub{color:var(--ink-dim);margin:6px 0 20px}
+.pane h2{font:400 20px/1.2 var(--display);margin:30px 0 12px}
+.btn:disabled{opacity:.5;cursor:default}
+.searchrow{display:flex;gap:10px;flex-wrap:wrap}
+.searchrow input{flex:1 1 220px;min-width:0;background:var(--wall-2);border:1px solid rgba(239,230,214,.18);border-radius:6px;padding:10px 12px}
+.results{display:flex;flex-direction:column;gap:8px}
+.res{display:flex;gap:14px;align-items:center;background:var(--wall-2);border-radius:8px;padding:10px 14px}
+.res img,.res .gen{height:78px;width:52px;object-fit:cover;flex:none;border-radius:2px}
+.res .gen{padding:4px}.res .gen b{font-size:8px}.res .gen span{display:none}
+.res div{flex:1;min-width:0}.res strong{font:400 16px/1.25 var(--display);display:block}.res small{color:var(--ink-dim)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--wall-2);border-radius:8px;padding:14px 16px}
+.tile b{font:400 30px/1.1 var(--display);display:block;font-variant-numeric:tabular-nums}
+.tile span{color:var(--ink-dim);font-size:13px}
+.bars{display:grid;grid-template-columns:minmax(70px,max-content) 1fr max-content;gap:8px 12px;align-items:center}
+.bars .l{min-width:0;overflow-wrap:anywhere}
+.bars .track{height:14px;background:var(--wall-2);border-radius:3px;overflow:hidden}
+.bars .track i{display:block;height:100%;background:var(--brass);border-radius:3px}
+.bars .v{font-variant-numeric:tabular-nums;color:var(--ink-dim);font-size:13px;text-align:right}
+.set{background:var(--wall-2);border-radius:8px;padding:16px 18px;margin-bottom:12px;display:flex;gap:12px 20px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.set>div{flex:1 1 260px;min-width:0}.set h3{margin:0 0 2px;font:600 15px/1.4 var(--body)}.set p{margin:0;color:var(--ink-dim);font-size:13px}
+.set label.btn{display:inline-block}
 #shelf{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #shelf img{-webkit-user-drag:none;pointer-events:none}
 .hint{align-self:center;width:100%;text-align:center;color:rgba(239,230,214,.38);font-size:13px;height:var(--row);display:flex;align-items:center;justify-content:center}
@@ -140,13 +169,13 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 </head>
 <body>
 
+<section class="view" id="view-library">
 <header>
   <div>
     <h1>Shelf Life</h1>
     <div class="count" id="count"></div>
   </div>
   <div class="actions">
-    <button class="btn" id="btnImport">Import Goodreads library</button>
     <button class="btn primary" id="btnScan">Scan a barcode</button>
   </div>
 </header>
@@ -158,6 +187,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <option value="read">Read</option>
     <option value="currently-reading">Currently reading</option>
     <option value="to-read">Want to read</option>
+    <option value="dnf">Did not finish</option>
   </select>
   <select id="sort" aria-label="Sort books">
     <option value="author">Sort by author</option>
@@ -174,11 +204,49 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 </div>
 
 <div class="notice" id="sampleNote" hidden><div>
-  <span>These are example books so you can see how the shelf works. Importing your Goodreads library replaces them.</span>
+  <span>These are example books so you can see how the shelf works. Importing your Goodreads library in Settings replaces them.</span>
   <button class="link" id="clearSamples">Clear the examples</button>
 </div></div>
 
 <main class="case"><div class="case-inner"><div id="shelf"></div></div></main>
+</section>
+
+<section class="view pane" id="view-discover" hidden>
+  <h1>Discover</h1>
+  <p class="sub">Find a book by title or author and add it to your shelf.</p>
+  <form class="searchrow" id="discForm">
+    <input type="search" id="discQ" placeholder="Title or author" aria-label="Search for a book by title or author">
+    <button class="btn" type="submit">Search</button>
+    <button class="btn primary" type="button" id="btnScan2">Scan a barcode</button>
+  </form>
+  <div class="status" id="discStatus" role="status"></div>
+  <div class="results" id="discResults"></div>
+</section>
+
+<section class="view pane" id="view-stats" hidden>
+  <h1>Reading stats</h1>
+  <div id="statsBody"></div>
+</section>
+
+<section class="view pane" id="view-settings" hidden>
+  <h1>Settings</h1>
+  <p class="sub">Your library is stored in this browser on this device.</p>
+  <div class="set"><div><h3>Goodreads</h3><p>Bring in your whole library, with ratings, shelves, reviews and dates.</p></div>
+    <button class="btn" id="btnImport">Import Goodreads library</button></div>
+  <div class="set"><div><h3>Backup</h3><p>Save your library to a file, or restore it on another device.</p><p id="backupStatus" role="status"></p></div>
+    <span><button class="btn" id="btnBackup">Save a backup</button> <label class="btn" for="restoreFile">Restore backup</label><input type="file" id="restoreFile" accept=".json" hidden></span></div>
+  <div class="set" id="setSamples"><div><h3>Example books</h3><p>The shelf starts with a few example books so you can try things out.</p></div>
+    <button class="btn" id="clearSamples2">Remove the examples</button></div>
+  <div class="set"><div><h3>Start again</h3><p>Remove every book, rating and note from this device. This cannot be undone.</p></div>
+    <span id="wipeWrap"></span></div>
+</section>
+
+<nav class="tabs" aria-label="Main">
+  <a href="#library" data-v="library"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="4.5" height="16" rx="1"/><rect x="9.5" y="7" width="4.5" height="13" rx="1"/><path d="M16.6 8.2l3.4 11.3"/></svg>Library</a>
+  <a href="#discover" data-v="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>Discover</a>
+  <a href="#stats" data-v="stats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M12 20V4M19 20v-5"/></svg>Stats</a>
+  <a href="#settings" data-v="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.6"/><circle cx="8" cy="17" r="2.6"/></svg>Settings</a>
+</nav>
 
 <dialog id="dBook"><div class="dlg" id="bookBody"></div></dialog>
 
@@ -198,10 +266,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
   </div>
   <div class="status" id="importStatus" role="status"></div>
-  <div class="foot">
-    <span class="dim">Your library stays in this browser.</span>
-    <span><button class="btn" id="btnBackup">Save a backup</button> <label class="btn" for="restoreFile">Restore backup</label><input type="file" id="restoreFile" accept=".json" hidden></span>
-  </div>
+  <p class="dim" style="margin-top:14px">Your library stays in this browser.</p>
 </div></dialog>
 
 <dialog id="dScan"><div class="dlg">
@@ -245,7 +310,7 @@ const SAMPLES = [
  ["The Book Thief","Markus Zusak","9780375842207",552,2005,4,"read",["World War II","Death","The power of words"]]
 ];
 
-let books = [], view = "spine", openId = null, arr = [];
+let books = [], view = "spine", openId = null, arr = [], found = [];
 
 /* ---------- storage ---------- */
 function load(){
@@ -269,7 +334,7 @@ function coverHtml(b){
 // A cover that fails to load is swapped for a drawn one.
 document.addEventListener("error", e => {
   const img = e.target; if(!(img instanceof HTMLImageElement) || !img.dataset.cov) return;
-  const b = books.find(x=>x.id===img.dataset.cov); if(!b) return;
+  const b = books.concat(found).find(x=>x.id===img.dataset.cov); if(!b) return;
   const t = document.createElement("template"); t.innerHTML = genCover(b); img.replaceWith(t.content);
 }, true);
 function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,"/"); }
@@ -315,7 +380,7 @@ function render(){
   const read = books.filter(b=>b.shelf==="read").length;
   $("#count").textContent = books.length ? `${books.length} ${books.length===1?"book":"books"} · ${read} read` + (list.length!==books.length ? ` · showing ${list.length}` : "") : "";
   if(!list.length){
-    shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books match that search." : "Your shelf is empty. Import your Goodreads library or scan a barcode to add your first book."}</div></div>`;
+    shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books match that search." : "Your shelf is empty. Find or scan a book in Discover, or import your Goodreads library in Settings."}</div></div>`;
     return;
   }
   const small = matchMedia("(max-width:640px)").matches;
@@ -367,7 +432,7 @@ function startDrag(){
   // holding a book near the top or bottom edge scrolls the bookcase
   (function edge(){
     if(!drag || !drag.active) return;
-    const d = drag.ly < 70 ? -14 : drag.ly > innerHeight - 70 ? 14 : 0;
+    const d = drag.ly < 70 ? -14 : drag.ly > innerHeight - 140 ? 14 : 0;
     if(d){ scrollBy(0, d); place(drag.lx, drag.ly); }
     requestAnimationFrame(edge);
   })();
@@ -422,7 +487,8 @@ $("#vCover").onclick = () => { view="cover"; save(); render(); };
 $("#clearSamples").onclick = () => { books = books.filter(b=>!b.sample); save(); render(); };
 
 /* ---------- book detail ---------- */
-const SHELVES = {"read":"Read","currently-reading":"Currently reading","to-read":"Want to read"};
+const SHELVES = {"read":"Read","currently-reading":"Currently reading","to-read":"Want to read","dnf":"Did not finish"};
+const DNF_TAG = /^(dnf|did-not-finish|didnt-finish|abandoned|gave-up)$/i;
 function openBook(id, fromEl){
   const b = books.find(x=>x.id===id); if(!b) return;
   if(openId) return;
@@ -533,8 +599,10 @@ function importCsv(text){
   for(const r of rows){
     const title = g(r,"Title").replace(/\s*\([^()]*#[\d.\-–]+\)\s*$/,""); if(!title) continue;
     const gid = g(r,"Book Id"), isbn = cleanIsbn(g(r,"ISBN13")) || cleanIsbn(g(r,"ISBN"));
-    const shelf = SHELVES[g(r,"Exclusive Shelf")] ? g(r,"Exclusive Shelf") : "read";
-    const tags = g(r,"Bookshelves").split(",").map(s=>s.trim()).filter(s=>s && !SHELVES[s]).map(s=>s.replace(/-/g," "));
+    const raw = g(r,"Bookshelves").split(",").map(s=>s.trim()).filter(Boolean);
+    const ex = g(r,"Exclusive Shelf");
+    const shelf = (DNF_TAG.test(ex) || raw.some(s=>DNF_TAG.test(s))) ? "dnf" : SHELVES[ex] ? ex : "read";
+    const tags = raw.filter(s=>!SHELVES[s] && !DNF_TAG.test(s)).map(s=>s.replace(/-/g," "));
     const notes = [g(r,"My Review"), g(r,"Private Notes")].filter(Boolean).join("\n\n").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"");
     const data = {title, author:g(r,"Author"), isbn, pages:+g(r,"Number of Pages")||0, year:+g(r,"Original Publication Year")||+g(r,"Year Published")||"",
       myRating:+g(r,"My Rating")||0, avgRating:+g(r,"Average Rating")||0, shelf, dateRead:g(r,"Date Read"), dateAdded:g(r,"Date Added")};
@@ -562,9 +630,9 @@ $("#btnBackup").onclick = () => {
   a.download = "shelf-life-backup.json"; a.click(); URL.revokeObjectURL(a.href);
 };
 $("#restoreFile").onchange = e => {
-  const f = e.target.files[0], st = $("#importStatus"); if(!f) return; e.target.value = "";
-  f.text().then(t => { const d = JSON.parse(t); if(!Array.isArray(d.books)) throw 0; books = d.books; save(); render(); st.className="status"; st.textContent = `Restored ${books.length} books.`; })
-    .catch(() => { st.className="status err"; st.textContent = "That file is not a Shelf Life backup."; });
+  const f = e.target.files[0], st = $("#backupStatus"); if(!f) return; e.target.value = "";
+  f.text().then(t => { const d = JSON.parse(t); if(!Array.isArray(d.books)) throw 0; books = d.books; save(); render(); st.className=""; st.textContent = `Restored ${books.length} books.`; })
+    .catch(() => { st.className=""; st.textContent = "That file is not a Shelf Life backup."; });
 };
 
 /* ---------- book lookup (Open Library, then Google Books) ---------- */
@@ -616,7 +684,7 @@ async function gotCode(raw){
   $("#foundBox").innerHTML = `<div class="found">${coverHtml(b)}<div><strong>${esc(b.title)}</strong><span class="dim">${esc(b.author)}${b.year?" · "+esc(b.year):""}</span></div><button class="btn primary" id="addFound">Add to shelf</button></div>`;
   $("#addFound").onclick = () => { books.push(b); save(); render(); $("#foundBox").innerHTML = ""; scanStatus(`Added "${b.title}". Scan the next one, or close.`); };
 }
-$("#btnScan").onclick = () => { $("#foundBox").innerHTML = ""; $("#isbnInput").value = ""; $("#dScan").showModal(); startCamera(); };
+$("#btnScan").onclick = $("#btnScan2").onclick = () => { $("#foundBox").innerHTML = ""; $("#isbnInput").value = ""; $("#dScan").showModal(); startCamera(); };
 $("#dScan").addEventListener("close", stopCamera);
 $("#isbnForm").onsubmit = e => { e.preventDefault(); gotCode($("#isbnInput").value); };
 $("#photoFile").onchange = async e => {
@@ -627,7 +695,95 @@ $("#photoFile").onchange = async e => {
   URL.revokeObjectURL(url);
 };
 
-load(); render();
+/* ---------- discover ---------- */
+function drawFound(){
+  $("#discResults").innerHTML = found.map((b,i) => {
+    const have = books.some(x => x.id===b.id || (b.isbn && x.isbn===b.isbn) || (x.title+x.author).toLowerCase()===(b.title+b.author).toLowerCase());
+    return `<div class="res">${coverHtml(b)}<div><strong>${esc(b.title)}</strong><small>${esc(b.author)}${b.year?" · "+esc(b.year):""}</small></div>`
+      + `<button class="btn" data-add="${i}"${have?" disabled":""}>${have?"On your shelf":"Add to shelf"}</button></div>`;
+  }).join("");
+}
+$("#discForm").onsubmit = async e => {
+  e.preventDefault();
+  const q = $("#discQ").value.trim(), st = $("#discStatus"); if(!q) return;
+  st.className = "status"; st.textContent = "Searching…"; found = []; drawFound();
+  try{
+    const r = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=20&fields=key,title,author_name,first_publish_year,number_of_pages_median,cover_i,isbn,subject`);
+    const docs = (await r.json()).docs || [];
+    found = docs.filter(d=>d.title).map(d => {
+      const seen = new Set();
+      const themes = (d.subject||[]).filter(s => { const k = s.toLowerCase(); if(s.length>=32 || JUNK.test(s) || seen.has(k)) return false; seen.add(k); return true; }).slice(0,6);
+      return {id:"ol"+String(d.key).replace(/\W/g,""), isbn:(d.isbn||[]).find(i=>/^97[89]\d{10}$/.test(i)) || "", title:d.title,
+        author:(d.author_name||[]).slice(0,2).join(", ") || "Unknown author", pages:d.number_of_pages_median||0, year:d.first_publish_year||"",
+        myRating:0, avgRating:0, shelf:"to-read", themes, notes:"", dateAdded:"", dateRead:"",
+        cover:d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "", color:"", themesTried:true};
+    });
+    st.textContent = found.length ? "" : "No books found. Try fewer words, or the author's surname.";
+    drawFound();
+  }catch(err){ st.className = "status err"; st.textContent = "The search could not reach Open Library. Check your connection and try again."; }
+};
+$("#discResults").onclick = e => {
+  const i = e.target.dataset.add; if(i===undefined) return;
+  const b = {...found[+i], dateAdded:today()};
+  books.push(b); save(); drawFound();
+  $("#discStatus").className = "status"; $("#discStatus").textContent = `Added "${b.title}" to your shelf as Want to read.`;
+};
+
+/* ---------- reading stats ---------- */
+function bars(rows){
+  const max = Math.max(1, ...rows.map(r=>r[1]));
+  return `<div class="bars">${rows.map(([l,v]) => `<span class="l">${esc(l)}</span><span class="track"><i style="width:${v/max*100}%"></i></span><span class="v">${v}</span>`).join("")}</div>`;
+}
+function topN(list, n){
+  const m = new Map(); list.forEach(x => m.set(x, (m.get(x)||0)+1));
+  return [...m.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0])).slice(0,n);
+}
+function renderStats(){
+  const el = $("#statsBody");
+  if(!books.length){ el.innerHTML = `<p class="sub">Add some books and your reading stats will appear here.</p>`; return; }
+  const read = books.filter(b=>b.shelf==="read"), rated = books.filter(b=>b.myRating>0), yr = String(new Date().getFullYear());
+  const pages = read.reduce((n,b)=>n+(b.pages||0),0);
+  const years = topN(read.map(b=>(b.dateRead||"").slice(0,4)).filter(y=>/^\d{4}$/.test(y)), 99).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,10);
+  const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+  const themes = topN((read.length?read:books).flatMap(b=>b.themes.map(t=>cap(t.trim()))).filter(Boolean), 8);
+  const authors = topN(read.map(b=>b.author), 6);
+  el.innerHTML = (books.some(b=>b.sample) ? `<p class="sub">These figures include the example books.</p>` : "") + `
+    <div class="tiles">
+      <div class="tile"><b>${read.length}</b><span>books read</span></div>
+      <div class="tile"><b>${pages.toLocaleString()}</b><span>pages read</span></div>
+      <div class="tile"><b>${read.filter(b=>(b.dateRead||"").startsWith(yr)).length}</b><span>finished in ${yr}</span></div>
+      <div class="tile"><b>${rated.length ? (rated.reduce((n,b)=>n+b.myRating,0)/rated.length).toFixed(1) : "–"}</b><span>average rating out of 5</span></div>
+    </div>
+    <h2>By status</h2>${bars(Object.entries(SHELVES).map(([k,v])=>[v, books.filter(b=>b.shelf===k).length]))}
+    <h2>My ratings</h2>${rated.length ? bars([5,4,3,2,1].map(n=>["★".repeat(n), rated.filter(b=>b.myRating===n).length])) : `<p class="sub">Rate a book to see how your ratings spread.</p>`}
+    <h2>Finished per year</h2>${years.length ? bars(years) : `<p class="sub">Books with a finish date will be counted here.</p>`}
+    ${themes.length ? `<h2>Themes you read most</h2>${bars(themes)}` : ""}
+    ${authors.length ? `<h2>Authors you read most</h2>${bars(authors)}` : ""}`;
+}
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  $("#setSamples").hidden = !books.some(b=>b.sample);
+  $("#wipeWrap").innerHTML = `<button class="btn" id="wipe">Delete all books</button>`;
+  $("#wipe").onclick = () => {
+    $("#wipeWrap").innerHTML = `<button class="btn" id="wipeYes" style="color:#ff9d8f">Yes, delete everything</button> <button class="btn" id="wipeNo">Keep my books</button>`;
+    $("#wipeYes").onclick = () => { books = []; arr = []; save(); renderSettings(); };
+    $("#wipeNo").onclick = renderSettings;
+  };
+}
+$("#clearSamples2").onclick = () => { books = books.filter(b=>!b.sample); save(); renderSettings(); };
+
+/* ---------- navigation ---------- */
+function show(){
+  let v = location.hash.slice(1); if(!document.getElementById("view-"+v)) v = "library";
+  document.querySelectorAll(".view").forEach(s => s.hidden = s.id !== "view-"+v);
+  document.querySelectorAll("nav.tabs a").forEach(a => a.dataset.v===v ? a.setAttribute("aria-current","page") : a.removeAttribute("aria-current"));
+  if(v==="library") render(); if(v==="stats") renderStats(); if(v==="settings") renderSettings(); if(v==="discover") drawFound();
+  scrollTo(0,0);
+}
+addEventListener("hashchange", show);
+
+load(); show();
 addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 150); });
 </script>
 </body>
