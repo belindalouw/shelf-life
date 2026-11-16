@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shelf Life</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;500;600&family=Caveat:wght@500&display=swap">
 <style>
 /* Layout: a single bookcase fills the page; a slim toolbar sits on the wall above it; books open in a reading-desk dialog. */
 :root{
@@ -67,7 +67,7 @@ h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
 .face{border:0;padding:0;background:none;height:186px;display:block;transition:transform .18s ease;box-shadow:3px 0 8px rgba(0,0,0,.5)}
 .face:hover,.face:focus-visible{transform:translateY(-10px)}
 .face img,.face .gen{height:186px;width:auto;display:block;border-radius:2px}
-.face img,.book .cov img{aspect-ratio:auto 2/3;background:var(--oak-deep)}
+.face img,.plate img{aspect-ratio:auto 2/3;background:var(--oak-deep)}
 .gen{aspect-ratio:2/3;padding:12px 10px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;overflow:hidden;
   background-image:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,0) 8%,rgba(255,255,255,.08) 10%,rgba(0,0,0,0) 14%)}
 .gen b{font:400 15px/1.15 var(--display);overflow-wrap:anywhere}
@@ -80,10 +80,42 @@ dialog::backdrop{background:rgba(10,15,19,.72)}
 .dlg h2{font:400 26px/1.15 var(--display);margin:0 0 4px;text-wrap:balance;padding-right:36px}
 .close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;font-size:18px;line-height:1}
 .close:hover{background:var(--line)}
-.book{display:grid;grid-template-columns:220px 1fr;gap:28px}
-.book .cov{align-self:start}
-.book .cov img,.book .cov .gen{width:100%;height:auto;border-radius:3px;box-shadow:0 14px 30px rgba(0,0,0,.35)}
-.book .cov .gen{padding:22px 18px}.book .cov .gen b{font-size:24px}.book .cov .gen span{font-size:12px}
+/* the open book */
+#dBook{background:transparent;box-shadow:none;overflow:visible;width:min(940px,calc(100vw - 24px));max-height:none}
+dialog::backdrop{animation:fade .35s ease}
+@keyframes fade{from{opacity:0}}
+.book2{position:relative;display:grid;grid-template-columns:1fr 1fr;perspective:2200px;min-height:560px;filter:drop-shadow(0 34px 40px rgba(0,0,0,.55))}
+.page{visibility:hidden;background-color:var(--paper);padding:34px 34px 26px;border:9px solid var(--c);min-width:0;display:flex;flex-direction:column}
+.book2.ready .page.right,.book2.open .page{visibility:visible}
+.book2.open .page.left{animation:fade .3s ease}
+.page.left{border-right:0;border-radius:10px 0 0 10px;text-align:center;align-items:center;justify-content:center;
+  background-image:linear-gradient(90deg,rgba(0,0,0,.07),transparent 3%,transparent 80%,rgba(60,40,10,.2));
+  box-shadow:inset 3px 0 0 #e9dfc9,inset 4px 0 0 #cdbf9f,inset 7px 0 0 #e9dfc9,inset 8px 0 0 #cdbf9f}
+.page.right{border-left:0;border-radius:0 10px 10px 0;
+  background-image:linear-gradient(90deg,rgba(60,40,10,.24),transparent 16%,transparent 97%,rgba(0,0,0,.07));
+  box-shadow:inset -3px 0 0 #e9dfc9,inset -4px 0 0 #cdbf9f,inset -7px 0 0 #e9dfc9,inset -8px 0 0 #cdbf9f}
+.plate{width:min(170px,60%);margin-bottom:22px;transform:rotate(-1.5deg)}
+.plate img,.plate .gen{width:100%;height:auto;display:block;border:5px solid #fffaf0;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.page h2{font:400 28px/1.15 var(--display);margin:0 0 6px;text-wrap:balance}
+.orn{width:70px;height:1px;background:var(--paper-dim);margin:14px auto;position:relative}
+.orn::after{content:"❦";position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);background:var(--paper);padding:0 8px;color:var(--paper-dim);font-size:14px}
+.page select{background:transparent;border:0;border-bottom:1px solid var(--paper-dim);border-radius:0;padding:4px 2px;color:var(--paper-ink);font:20px/1.2 "Caveat",cursive}
+.page .chip{background:transparent;border-bottom:1px solid var(--paper-dim);border-radius:0;padding:0 0 0 2px;font:21px/1.2 "Caveat",cursive}
+.page .chips{gap:4px 14px}
+.page .chips input{background:transparent;border:0;border-bottom:1px dashed var(--paper-dim);border-radius:0!important;padding:2px!important;width:120px;color:var(--paper-ink);font:20px/1.2 "Caveat",cursive}
+.page textarea{flex:1;min-height:180px;border:0;border-radius:0;padding:0 2px;color:#2b3a67;font:22px/30px "Caveat",cursive;resize:none;
+  background:repeating-linear-gradient(180deg,transparent 0,transparent 29px,rgba(60,50,30,.22) 29px,rgba(60,50,30,.22) 30px)}
+.page .foot{margin-top:14px}
+.page .btn{border-color:var(--paper-dim);color:var(--paper-ink)}
+.page .btn.danger{color:var(--danger);border:0;padding:9px 0;text-decoration:underline;text-underline-offset:3px;background:none}
+.page .btn.primary{color:#2a1f08;border-color:var(--brass)}
+.page .close{border-color:var(--paper-dim);color:var(--paper-ink);top:22px;right:24px}
+.flap{position:absolute;left:50%;top:0;width:50%;height:100%;transform-origin:left center;transform-style:preserve-3d;z-index:2}
+.flap>div{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:0 10px 10px 0;overflow:hidden}
+.ff{background:var(--c)}
+.ff img{width:100%;height:100%;object-fit:cover;display:block}
+.ff .gen{width:100%;height:100%;aspect-ratio:auto;padding:36px 30px}.ff .gen b{font-size:34px}.ff .gen span{font-size:14px}
+.fb{transform:rotateY(180deg);background:var(--paper);border:9px solid var(--c);border-left:0;background-image:linear-gradient(270deg,rgba(60,40,10,.2),transparent 20%)}
 .by{color:var(--paper-dim);margin:0 0 4px;font-size:16px}
 .meta{color:var(--paper-dim);font-size:13px;margin:0 0 16px;font-variant-numeric:tabular-nums}
 .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);margin:16px 0 6px;font-weight:600}
@@ -121,8 +153,12 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 .found strong{font:400 17px/1.2 var(--display);display:block}
 @media (max-width:640px){
   h1{font-size:28px}
-  .book{grid-template-columns:1fr;gap:18px}
-  .book .cov{max-width:150px}
+  #dBook{overflow:auto;max-height:calc(100vh - 24px)}
+  .book2{grid-template-columns:1fr;min-height:0;filter:none}
+  .page{padding:26px 22px 20px}
+  .page.left{border-right:9px solid var(--c);border-bottom:0;border-radius:10px 10px 0 0;box-shadow:none;background-image:none}
+  .page.right{border-left:9px solid var(--c);border-top:0;border-radius:0 0 10px 10px;box-shadow:none;background-image:none}
+  .flap{left:0;width:100%}.flap>div{border-radius:10px}
   .dlg{padding:22px 18px 18px}
   :root{--row:184px}
   .face,.face img,.face .gen{height:158px}
@@ -171,7 +207,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 
 <main class="case"><div class="case-inner"><div class="shelf" id="shelf"></div></div></main>
 
-<dialog id="dBook"><div class="dlg" id="bookBody"></div></dialog>
+<dialog id="dBook"><div id="bookBody"></div></dialog>
 
 <dialog id="dImport"><div class="dlg">
   <button class="close" data-close aria-label="Close">×</button>
@@ -310,15 +346,9 @@ $("#clearSamples").onclick = () => { books = books.filter(b=>!b.sample); save();
 const SHELVES = {"read":"Read","currently-reading":"Currently reading","to-read":"Want to read"};
 function openBook(id, fromEl){
   const b = books.find(x=>x.id===id); if(!b) return;
+  if(openId) return;
   openId = id; drawBook(b);
-  const d = $("#dBook"); d.showModal();
-  if(fromEl){
-    fromEl.classList.add("out");
-    const cov = d.querySelector(".cov"), a = fromEl.getBoundingClientRect(), z = cov.getBoundingClientRect();
-    if(z.width && !matchMedia("(prefers-reduced-motion:reduce)").matches){
-      cov.animate([{transform:`translate(${a.left-z.left}px,${a.top-z.top}px) scale(${a.width/z.width},${a.height/Math.max(z.height,1)})`,transformOrigin:"0 0",opacity:.6},{transform:"none",transformOrigin:"0 0",opacity:1}],{duration:420,easing:"cubic-bezier(.2,.8,.2,1)"});
-    }
-  }
+  takeOffShelf(id, fromEl);
   if(!b.themesTried && b.isbn){ b.themesTried = true; save(); lookup(b.isbn).then(info=>{
     if(!info) return;
     const have = new Set(b.themes.map(t=>t.toLowerCase()));
@@ -327,16 +357,42 @@ function openBook(id, fromEl){
     save(); if(openId===id) drawThemes(b);
   }); }
 }
-function drawBook(b){
+// The book is pulled up out of its slot, carried to the middle of the room, and its cover swings open.
+async function takeOffShelf(id, fromEl){
+  const d = $("#dBook"), book = d.querySelector(".book2"), flap = book.querySelector(".flap");
+  const done = () => { book.classList.add("ready","open"); flap.hidden = true; };
+  if(!fromEl || matchMedia("(prefers-reduced-motion:reduce)").matches){ d.showModal(); done(); return; }
+  const wait = a => a.finished.catch(()=>{});
+  await wait(fromEl.animate([{transform:"translateY(0)"},{transform:"translateY(-48px)"}],{duration:240,easing:"cubic-bezier(.3,.7,.3,1)",fill:"forwards"}));
+  if(openId!==id) return;
+  const a = fromEl.getBoundingClientRect(); fromEl.classList.add("out");
+  d.showModal();
+  const z = flap.getBoundingClientRect();
+  const fly = flap.animate([
+    {transform:`translate(${a.left-z.left}px,${a.top-z.top}px) scale(${a.width/z.width},${a.height/z.height})`,transformOrigin:"0 0"},
+    {transform:"none",transformOrigin:"0 0"}],{duration:560,easing:"cubic-bezier(.5,0,.2,1)"});
+  await wait(fly);
+  if(openId!==id) return;
+  book.classList.add("ready");
+  if(matchMedia("(max-width:640px)").matches) await wait(flap.animate([{opacity:1},{opacity:0}],{duration:300,fill:"forwards"}));
+  else await wait(flap.animate([{transform:"rotateY(0)"},{transform:"rotateY(-180deg)"}],{duration:760,easing:"cubic-bezier(.45,.05,.3,1)",fill:"forwards"}));
+  if(openId===id) done();
+}
+function drawBook(b, opened){
   const meta = [b.year, b.pages ? b.pages+" pages" : "", b.isbn ? "ISBN "+b.isbn : ""].filter(Boolean).join(" · ");
+  const c = colorOf(b);
   $("#bookBody").innerHTML = `
-    <button class="close" data-close aria-label="Put back on the shelf">×</button>
-    <div class="book">
-      <div class="cov">${coverHtml(b)}</div>
-      <div style="min-width:0">
+    <div class="book2${opened?" ready open":""}" style="--c:${c}">
+      <section class="page left">
+        <div class="plate">${coverHtml(b)}</div>
         <h2>${esc(b.title)}</h2>
         <p class="by">${esc(b.author)}</p>
+        <div class="orn"></div>
         <p class="meta">${esc(meta)}</p>
+        ${b.dateRead ? `<p class="dim">Finished ${esc(b.dateRead)}</p>` : ""}
+      </section>
+      <section class="page right">
+        <button class="close" data-close aria-label="Put back on the shelf">×</button>
         <div class="row2">
           <div><div class="lab" style="margin-top:0">My rating</div><div class="stars" id="stars"></div></div>
           <div><div class="lab" style="margin-top:0"><label for="bShelf">Status</label></div>
@@ -346,12 +402,12 @@ function drawBook(b){
         <div class="chips" id="themes"></div>
         <div class="lab"><label for="bNotes">Notes</label></div>
         <textarea id="bNotes" placeholder="What stayed with you?">${esc(b.notes)}</textarea>
-        ${b.dateRead ? `<p class="dim" style="margin-top:8px">Finished ${esc(b.dateRead)}</p>` : ""}
-      </div>
-    </div>
-    <div class="foot">
-      <span id="rmWrap"><button class="btn danger" id="rm">Remove from library</button></span>
-      <button class="btn primary" data-close>Put back on the shelf</button>
+        <div class="foot">
+          <span id="rmWrap"><button class="btn danger" id="rm">Remove from library</button></span>
+          <button class="btn primary" data-close>Put back on the shelf</button>
+        </div>
+      </section>
+      <div class="flap"${opened?" hidden":""}><div class="ff">${coverHtml(b)}</div><div class="fb"></div></div>
     </div>`;
   drawStars(b); drawThemes(b);
   $("#bShelf").onchange = e => { b.shelf = e.target.value; if(b.shelf==="read" && !b.dateRead) b.dateRead = today(); save(); };
@@ -359,7 +415,7 @@ function drawBook(b){
   $("#rm").onclick = () => {
     $("#rmWrap").innerHTML = `<span class="dim">Remove this book? </span><button class="btn danger" id="rmYes">Yes, remove</button> <button class="btn" id="rmNo">Keep</button>`;
     $("#rmYes").onclick = () => { books = books.filter(x=>x.id!==b.id); save(); $("#dBook").close(); };
-    $("#rmNo").onclick = () => drawBook(b);
+    $("#rmNo").onclick = () => drawBook(b, true);
   };
 }
 function drawStars(b){
@@ -375,7 +431,12 @@ function drawThemes(b){
   el.onclick = e => { const i = e.target.dataset.i; if(i===undefined) return; b.themes.splice(+i,1); save(); drawThemes(b); };
   $("#addTheme").onkeydown = e => { if(e.key!=="Enter") return; e.preventDefault(); const v = e.target.value.trim(); if(!v) return; b.themes.push(v); save(); drawThemes(b); $("#addTheme").focus(); };
 }
-$("#dBook").addEventListener("close", () => { openId = null; render(); });
+$("#dBook").addEventListener("close", () => {
+  const id = openId; openId = null; render();
+  const el = [...document.querySelectorAll("#shelf [data-id]")].find(e => e.dataset.id===id);
+  if(el && !matchMedia("(prefers-reduced-motion:reduce)").matches)
+    el.animate([{transform:"translateY(-48px)",opacity:0},{transform:"translateY(-48px)",opacity:1,offset:.3},{transform:"translateY(0)",opacity:1}],{duration:420,easing:"cubic-bezier(.3,.7,.3,1)"});
+});
 
 /* ---------- dialogs ---------- */
 document.addEventListener("click", e => { if(e.target.closest("[data-close]")) e.target.closest("dialog").close(); });
