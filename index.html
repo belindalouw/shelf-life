@@ -52,7 +52,10 @@ h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
 .shelf{display:flex;flex-wrap:wrap;align-items:flex-end;column-gap:2px;row-gap:var(--gap);padding-bottom:var(--gap);min-height:calc(var(--row) + var(--gap));
   background:repeating-linear-gradient(180deg,transparent 0,transparent var(--row),var(--oak) var(--row),var(--oak-dark) calc(var(--row) + var(--board)),rgba(0,0,0,.5) calc(var(--row) + var(--board)),transparent calc(var(--row) + var(--gap)));
   margin:0 -14px;padding-left:14px;padding-right:14px}
-.shelf.covers{column-gap:10px}
+.slot.f{margin:0 5px}
+.dlg .seg{border-color:var(--line)}
+.dlg .seg button{color:var(--paper-dim)}
+.dlg .seg button[aria-pressed=true]{background:var(--paper-ink);color:var(--paper)}
 .slot{height:var(--row);display:flex;align-items:flex-end}
 .empty{padding:60px 20px;text-align:center;color:var(--ink-dim);width:100%;align-self:center}
 
@@ -175,13 +178,9 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <h1>Shelf Life</h1>
     <div class="count" id="count"></div>
   </div>
-  <div class="actions">
-    <button class="btn primary" id="btnScan">Scan a barcode</button>
-  </div>
 </header>
 
 <div class="controls">
-  <input type="search" id="q" placeholder="Search title or author" aria-label="Search title or author">
   <select id="fShelf" aria-label="Filter by reading status">
     <option value="">All books</option>
     <option value="read">Read</option>
@@ -196,17 +195,8 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <option value="added">Sort by date added</option>
     <option value="custom">My arrangement</option>
   </select>
-  <span class="spacer"></span>
-  <div class="seg" role="group" aria-label="Shelf view">
-    <button id="vSpine" aria-pressed="true">Spines</button>
-    <button id="vCover" aria-pressed="false">Covers</button>
-  </div>
 </div>
 
-<div class="notice" id="sampleNote" hidden><div>
-  <span>These are example books so you can see how the shelf works. Importing your Goodreads library in Settings replaces them.</span>
-  <button class="link" id="clearSamples">Clear the examples</button>
-</div></div>
 
 <main class="case"><div class="case-inner"><div id="shelf"></div></div></main>
 </section>
@@ -235,6 +225,8 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <button class="btn" id="btnImport">Import Goodreads library</button></div>
   <div class="set"><div><h3>Backup</h3><p>Save your library to a file, or restore it on another device.</p><p id="backupStatus" role="status"></p></div>
     <span><button class="btn" id="btnBackup">Save a backup</button> <label class="btn" for="restoreFile">Restore backup</label><input type="file" id="restoreFile" accept=".json" hidden></span></div>
+  <div class="set"><div><h3>Shelf display</h3><p>Each book can show its spine or its front cover. Choose in the book's popup, or set every book at once here.</p><p id="faceStatus" role="status"></p></div>
+    <span><button class="btn" id="allSpine">All spines</button> <button class="btn" id="allCover">All covers</button></span></div>
   <div class="set" id="setSamples"><div><h3>Example books</h3><p>The shelf starts with a few example books so you can try things out.</p></div>
     <button class="btn" id="clearSamples2">Remove the examples</button></div>
   <div class="set"><div><h3>Start again</h3><p>Remove every book, rating and note from this device. This cannot be undone.</p></div>
@@ -340,10 +332,10 @@ document.addEventListener("error", e => {
 function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,"/"); }
 
 /* ---------- shelf ---------- */
-function filtering(){ return !!($("#q").value.trim() || $("#fShelf").value); }
+function filtering(){ return !!$("#fShelf").value; }
 function matcher(){
-  const q = $("#q").value.trim().toLowerCase(), f = $("#fShelf").value;
-  return b => (!f || b.shelf===f) && (!q || (b.title+" "+b.author).toLowerCase().includes(q));
+  const f = $("#fShelf").value;
+  return b => !f || b.shelf===f;
 }
 // In "My arrangement", arr holds the shelves: a list of rows, each a list of book ids.
 function normArr(){
@@ -375,19 +367,17 @@ function visible(){
 }
 function render(){
   const shelf = $("#shelf"), rows = shelfRows(), list = rows.flat(), custom = $("#sort").value==="custom";
-  $("#vSpine").setAttribute("aria-pressed", view==="spine"); $("#vCover").setAttribute("aria-pressed", view==="cover");
-  $("#sampleNote").hidden = !books.some(b=>b.sample);
   const read = books.filter(b=>b.shelf==="read").length;
   $("#count").textContent = books.length ? `${books.length} ${books.length===1?"book":"books"} · ${read} read` + (list.length!==books.length ? ` · showing ${list.length}` : "") : "";
   if(!list.length){
-    shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books match that search." : "Your shelf is empty. Find or scan a book in Discover, or import your Goodreads library in Settings."}</div></div>`;
+    shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books with that status." : "Your shelf is empty. Find or scan a book in Discover, or import your Goodreads library in Settings."}</div></div>`;
     return;
   }
   const small = matchMedia("(max-width:640px)").matches;
-  const cls = "shelf" + (view==="cover" ? " covers" : "");
+  const cls = "shelf";
   shelf.innerHTML = rows.map(row => `<div class="${cls}">` + (row.length ? "" : `<div class="hint">Drag a book here to start a new shelf</div>`) + row.map(b=>{
     const label = `${esc(b.title)} by ${esc(b.author)}`;
-    if(view==="cover") return `<div class="slot"><button class="face" data-id="${esc(b.id)}" aria-label="${label}">${coverHtml(b)}</button></div>`;
+    if((b.face||view)==="cover") return `<div class="slot f"><button class="face" data-id="${esc(b.id)}" aria-label="${label}">${coverHtml(b)}</button></div>`;
     const h = hash(b.title), c = colorOf(b);
     const w = Math.round(Math.max(24, Math.min(62, (b.pages||280)/11)));
     const ht = (small?130:156) + h % (small?44:50);
@@ -395,7 +385,7 @@ function render(){
   }).join("") + "</div>").join("");
 }
 $("#shelf").addEventListener("click", e => { if(justDragged) return; const el = e.target.closest("[data-id]"); if(el) openBook(el.dataset.id, el); });
-["q","fShelf","sort"].forEach(id => $("#"+id).addEventListener("input", () => { save(); render(); }));
+["fShelf","sort"].forEach(id => $("#"+id).addEventListener("input", () => { save(); render(); }));
 
 /* ---------- click and hold to rearrange ---------- */
 let drag = null, justDragged = false;
@@ -482,9 +472,6 @@ function dragOver(e){
 document.addEventListener("pointerup", dragOver);
 document.addEventListener("pointercancel", dragOver);
 document.addEventListener("touchmove", e => { if(drag && drag.active) e.preventDefault(); }, {passive:false});
-$("#vSpine").onclick = () => { view="spine"; save(); render(); };
-$("#vCover").onclick = () => { view="cover"; save(); render(); };
-$("#clearSamples").onclick = () => { books = books.filter(b=>!b.sample); save(); render(); };
 
 /* ---------- book detail ---------- */
 const SHELVES = {"read":"Read","currently-reading":"Currently reading","to-read":"Want to read","dnf":"Did not finish"};
@@ -529,6 +516,8 @@ function drawBook(b){
           <div><div class="lab" style="margin-top:0">My rating</div><div class="stars" id="stars"></div></div>
           <div><div class="lab" style="margin-top:0"><label for="bShelf">Status</label></div>
             <select id="bShelf">${Object.entries(SHELVES).map(([k,v])=>`<option value="${k}"${b.shelf===k?" selected":""}>${v}</option>`).join("")}</select></div>
+          <div><div class="lab" style="margin-top:0">Show on the shelf as</div>
+            <div class="seg" id="bFace" role="group" aria-label="Show on the shelf as"><button data-f="spine">Spine</button><button data-f="cover">Cover</button></div></div>
         </div>
         <div class="lab">Themes</div>
         <div class="chips" id="themes"></div>
@@ -543,6 +532,9 @@ function drawBook(b){
     </div>`;
   drawStars(b); drawThemes(b);
   $("#bShelf").onchange = e => { b.shelf = e.target.value; if(b.shelf==="read" && !b.dateRead) b.dateRead = today(); save(); };
+  const drawFace = () => $("#bFace").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", (b.face||view)===x.dataset.f));
+  drawFace();
+  $("#bFace").onclick = e => { const f = e.target.dataset.f; if(!f) return; b.face = f; save(); drawFace(); };
   $("#bNotes").oninput = e => { b.notes = e.target.value; save(); };
   $("#rm").onclick = () => {
     $("#rmWrap").innerHTML = `<span class="dim">Remove this book? </span><button class="btn danger" id="rmYes">Yes, remove</button> <button class="btn" id="rmNo">Keep</button>`;
@@ -684,7 +676,7 @@ async function gotCode(raw){
   $("#foundBox").innerHTML = `<div class="found">${coverHtml(b)}<div><strong>${esc(b.title)}</strong><span class="dim">${esc(b.author)}${b.year?" · "+esc(b.year):""}</span></div><button class="btn primary" id="addFound">Add to shelf</button></div>`;
   $("#addFound").onclick = () => { books.push(b); save(); render(); $("#foundBox").innerHTML = ""; scanStatus(`Added "${b.title}". Scan the next one, or close.`); };
 }
-$("#btnScan").onclick = $("#btnScan2").onclick = () => { $("#foundBox").innerHTML = ""; $("#isbnInput").value = ""; $("#dScan").showModal(); startCamera(); };
+$("#btnScan2").onclick = () => { $("#foundBox").innerHTML = ""; $("#isbnInput").value = ""; $("#dScan").showModal(); startCamera(); };
 $("#dScan").addEventListener("close", stopCamera);
 $("#isbnForm").onsubmit = e => { e.preventDefault(); gotCode($("#isbnInput").value); };
 $("#photoFile").onchange = async e => {
@@ -771,6 +763,9 @@ function renderSettings(){
     $("#wipeNo").onclick = renderSettings;
   };
 }
+function setAll(v){ view = v; books.forEach(b => delete b.face); save(); $("#faceStatus").textContent = v==="cover" ? "Every book now shows its cover." : "Every book now shows its spine."; }
+$("#allSpine").onclick = () => setAll("spine");
+$("#allCover").onclick = () => setAll("cover");
 $("#clearSamples2").onclick = () => { books = books.filter(b=>!b.sample); save(); renderSettings(); };
 
 /* ---------- navigation ---------- */
