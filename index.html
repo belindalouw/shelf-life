@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelf Life</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single bookcase fills the page; a slim toolbar sits on the wall above it; books open in a reading-desk dialog. */
+:root{
+  --wall:#18232b; --wall-2:#1f2e38; --ink:#efe6d6; --ink-dim:#a9b3b6;
+  --oak:#b98a55; --oak-dark:#7a5631; --oak-deep:#3d2a17;
+  --brass:#e2b65a; --paper:#f4ecdc; --paper-ink:#221d16; --paper-dim:#6d6252; --line:#d9cdb6;
+  --danger:#a8392e;
+  --display:"Young Serif", Georgia, "Times New Roman", serif;
+  --body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --row:214px; --board:16px; --gap:30px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--wall);color:var(--ink);font:15px/1.5 var(--body);min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+[hidden]{display:none!important}
+
+header{max-width:1200px;margin:0 auto;padding:28px 20px 18px;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;justify-content:space-between}
+h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
+.count{color:var(--ink-dim);font-size:13px;margin-top:6px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid rgba(239,230,214,.28);background:transparent;border-radius:6px;padding:9px 14px;font-weight:500}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:#2a1f08;font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+
+.controls{max-width:1200px;margin:0 auto;padding:0 20px 18px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.controls input[type=search],.controls select{background:var(--wall-2);border:1px solid rgba(239,230,214,.18);border-radius:6px;padding:8px 10px;min-width:0}
+.controls input[type=search]{flex:1 1 200px;max-width:320px}
+.seg{display:inline-flex;border:1px solid rgba(239,230,214,.18);border-radius:6px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 12px;color:var(--ink-dim)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--wall);font-weight:600}
+.spacer{flex:1}
+
+.notice{max-width:1200px;margin:0 auto 14px;padding:0 20px}
+.notice div{background:var(--wall-2);border-left:3px solid var(--brass);padding:10px 14px;border-radius:0 6px 6px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;font-size:14px}
+.link{background:none;border:0;padding:0;color:var(--brass);text-decoration:underline;text-underline-offset:3px}
+
+.case{max-width:1200px;margin:0 auto 60px;padding:0 20px}
+.case-inner{background:linear-gradient(90deg,var(--oak-deep),#2a1c0f 6%,#2a1c0f 94%,var(--oak-deep));border:14px solid var(--oak-dark);border-image:linear-gradient(180deg,var(--oak),var(--oak-dark)) 1;box-shadow:0 30px 60px rgba(0,0,0,.45);padding:18px 14px 0}
+.shelf{display:flex;flex-wrap:wrap;align-items:flex-end;column-gap:2px;row-gap:var(--gap);padding-bottom:var(--gap);min-height:calc(var(--row) + var(--gap));
+  background:repeating-linear-gradient(180deg,transparent 0,transparent var(--row),var(--oak) var(--row),var(--oak-dark) calc(var(--row) + var(--board)),rgba(0,0,0,.5) calc(var(--row) + var(--board)),transparent calc(var(--row) + var(--gap)));
+  margin:0 -14px;padding-left:14px;padding-right:14px}
+.shelf.covers{column-gap:10px}
+.slot{height:var(--row);display:flex;align-items:flex-end}
+.empty{padding:60px 20px;text-align:center;color:var(--ink-dim);width:100%;align-self:center}
+
+.spine{border:0;padding:10px 0 8px;writing-mode:vertical-rl;display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden;border-radius:2px 2px 0 0;
+  background-image:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,0) 28%,rgba(0,0,0,0) 68%,rgba(0,0,0,.32));
+  box-shadow:inset 0 9px 0 -7px rgba(255,255,255,.35),inset 0 -9px 0 -7px rgba(0,0,0,.35);
+  transition:transform .18s ease;transform-origin:bottom}
+.spine:hover,.spine:focus-visible{transform:translateY(-12px)}
+.spine .t{font:400 13px/1.1 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:0;flex:1 1 auto}
+.spine.wide .t{font-size:15px}
+.spine .a{font-size:9px;letter-spacing:.08em;text-transform:uppercase;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:38%;flex:0 1 auto}
+.face{border:0;padding:0;background:none;height:186px;display:block;transition:transform .18s ease;box-shadow:3px 0 8px rgba(0,0,0,.5)}
+.face:hover,.face:focus-visible{transform:translateY(-10px)}
+.face img,.face .gen{height:186px;width:auto;display:block;border-radius:2px}
+.face img,.book .cov img{aspect-ratio:auto 2/3;background:var(--oak-deep)}
+.gen{aspect-ratio:2/3;padding:12px 10px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;overflow:hidden;
+  background-image:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,0) 8%,rgba(255,255,255,.08) 10%,rgba(0,0,0,0) 14%)}
+.gen b{font:400 15px/1.15 var(--display);overflow-wrap:anywhere}
+.gen span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.out{visibility:hidden}
+
+dialog{border:0;padding:0;background:var(--paper);color:var(--paper-ink);border-radius:10px;width:min(820px,calc(100vw - 24px));max-height:calc(100vh - 24px);box-shadow:0 40px 90px rgba(0,0,0,.6);color-scheme:light}
+dialog::backdrop{background:rgba(10,15,19,.72)}
+.dlg{padding:26px 28px 24px;position:relative}
+.dlg h2{font:400 26px/1.15 var(--display);margin:0 0 4px;text-wrap:balance;padding-right:36px}
+.close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;font-size:18px;line-height:1}
+.close:hover{background:var(--line)}
+.book{display:grid;grid-template-columns:220px 1fr;gap:28px}
+.book .cov{align-self:start}
+.book .cov img,.book .cov .gen{width:100%;height:auto;border-radius:3px;box-shadow:0 14px 30px rgba(0,0,0,.35)}
+.book .cov .gen{padding:22px 18px}.book .cov .gen b{font-size:24px}.book .cov .gen span{font-size:12px}
+.by{color:var(--paper-dim);margin:0 0 4px;font-size:16px}
+.meta{color:var(--paper-dim);font-size:13px;margin:0 0 16px;font-variant-numeric:tabular-nums}
+.lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);margin:16px 0 6px;font-weight:600}
+.stars{display:flex;align-items:center;gap:2px}
+.stars button{border:0;background:none;padding:0 1px;font-size:26px;line-height:1;color:#c9bca3}
+.stars button.on{color:#c98a12}
+.stars small{margin-left:12px;color:var(--paper-dim);font-size:13px}
+.row2{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+.dlg select,.dlg input[type=text],.dlg textarea{background:#fffaf0;border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--paper-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{background:#e7dcc4;border-radius:999px;padding:3px 6px 3px 11px;font-size:13px;display:inline-flex;gap:4px;align-items:center}
+.chip button{border:0;background:none;padding:0 4px;color:var(--paper-dim);font-size:15px;line-height:1}
+.chip button:hover{color:var(--danger)}
+.chips input{width:130px;padding:4px 10px!important;border-radius:999px!important;font-size:13px}
+.dim{color:var(--paper-dim);font-size:13px}
+textarea{width:100%;min-height:130px;resize:vertical;line-height:1.5}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.dlg .btn{border-color:var(--line)}
+.dlg .btn:hover{border-color:var(--paper-ink)}
+.dlg .btn.danger{color:var(--danger)}
+.dlg .btn.primary{border-color:var(--brass)}
+.dlg p{margin:0 0 12px}
+.dlg ol{margin:0 0 16px;padding-left:20px}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:26px;text-align:center;background:#fffaf0}
+.drop.over{border-color:var(--brass);background:#fff3d6}
+.status{margin-top:12px;font-size:14px;min-height:1.5em}
+.status.err{color:var(--danger)}
+video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:cover;display:block}
+.scanrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.scanrow input[type=text]{flex:1 1 160px;min-width:0}
+.found{display:flex;gap:14px;align-items:center;margin-top:14px;padding:12px;background:#fffaf0;border:1px solid var(--line);border-radius:8px}
+.found img,.found .gen{height:96px;width:auto;border-radius:2px;flex:none}
+.found .gen{padding:6px}.found .gen b{font-size:10px}.found .gen span{display:none}
+.found div{min-width:0;flex:1}
+.found strong{font:400 17px/1.2 var(--display);display:block}
+@media (max-width:640px){
+  h1{font-size:28px}
+  .book{grid-template-columns:1fr;gap:18px}
+  .book .cov{max-width:150px}
+  .dlg{padding:22px 18px 18px}
+  :root{--row:184px}
+  .face,.face img,.face .gen{height:158px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Shelf Life</h1>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="btnImport">Import Goodreads library</button>
+    <button class="btn primary" id="btnScan">Scan a barcode</button>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="search" id="q" placeholder="Search title or author" aria-label="Search title or author">
+  <select id="fShelf" aria-label="Filter by reading status">
+    <option value="">All books</option>
+    <option value="read">Read</option>
+    <option value="currently-reading">Currently reading</option>
+    <option value="to-read">Want to read</option>
+  </select>
+  <select id="sort" aria-label="Sort books">
+    <option value="author">Sort by author</option>
+    <option value="title">Sort by title</option>
+    <option value="rating">Sort by my rating</option>
+    <option value="added">Sort by date added</option>
+  </select>
+  <span class="spacer"></span>
+  <div class="seg" role="group" aria-label="Shelf view">
+    <button id="vSpine" aria-pressed="true">Spines</button>
+    <button id="vCover" aria-pressed="false">Covers</button>
+  </div>
+</div>
+
+<div class="notice" id="sampleNote" hidden><div>
+  <span>These are example books so you can see how the shelf works. Importing your Goodreads library replaces them.</span>
+  <button class="link" id="clearSamples">Clear the examples</button>
+</div></div>
+
+<main class="case"><div class="case-inner"><div class="shelf" id="shelf"></div></div></main>
+
+<dialog id="dBook"><div class="dlg" id="bookBody"></div></dialog>
+
+<dialog id="dImport"><div class="dlg">
+  <button class="close" data-close aria-label="Close">×</button>
+  <h2>Import your Goodreads library</h2>
+  <p class="dim">Goodreads lets you download your whole library as one file.</p>
+  <ol>
+    <li>On goodreads.com, open <b>My Books</b>.</li>
+    <li>In the left column, choose <b>Import and export</b>.</li>
+    <li>Click <b>Export Library</b>, then download the file when the link appears.</li>
+    <li>Drop that file below.</li>
+  </ol>
+  <div class="drop" id="drop">
+    <p>Drop <b>goodreads_library_export.csv</b> here</p>
+    <label class="btn" for="csvFile">Choose file</label>
+    <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+  </div>
+  <div class="status" id="importStatus" role="status"></div>
+  <div class="foot">
+    <span class="dim">Your library stays in this browser.</span>
+    <span><button class="btn" id="btnBackup">Save a backup</button> <label class="btn" for="restoreFile">Restore backup</label><input type="file" id="restoreFile" accept=".json" hidden></span>
+  </div>
+</div></dialog>
+
+<dialog id="dScan"><div class="dlg">
+  <button class="close" data-close aria-label="Close">×</button>
+  <h2>Add a book</h2>
+  <p class="dim">Hold the barcode on the back cover up to the camera. It is the one that starts with 978 or 979.</p>
+  <video id="video" playsinline muted></video>
+  <div class="scanrow">
+    <label class="btn" for="photoFile">Use a photo of the barcode</label>
+    <input type="file" id="photoFile" accept="image/*" capture="environment" hidden>
+  </div>
+  <form class="scanrow" id="isbnForm">
+    <input type="text" id="isbnInput" inputmode="numeric" placeholder="Or type the ISBN" aria-label="ISBN">
+    <button class="btn" type="submit">Look up</button>
+  </form>
+  <div class="status" id="scanStatus" role="status"></div>
+  <div id="foundBox"></div>
+</div></dialog>
+
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const KEY = "shelflife.v1";
+const CLOTH = ["#7b2d26","#1f4e5f","#3a5a40","#b08d57","#2b2d42","#8d5524","#5e3c58","#c9ada7","#264653","#a44a3f","#e0c097","#44633f","#6b705c","#3d405b","#9a8c98","#d4a373"];
+const SAMPLES = [
+ ["The Hobbit","J.R.R. Tolkien","9780547928227",300,1937,5,"read",["Fantasy","Adventure","Quests"]],
+ ["Pride and Prejudice","Jane Austen","9780141439518",480,1813,4,"read",["Classics","Romance","Class and society"]],
+ ["Nineteen Eighty-Four","George Orwell","9780451524935",328,1949,5,"read",["Dystopia","Surveillance","Totalitarianism"]],
+ ["To Kill a Mockingbird","Harper Lee","9780061120084",336,1960,5,"read",["Justice","Race","Coming of age"]],
+ ["The Great Gatsby","F. Scott Fitzgerald","9780743273565",180,1925,3,"read",["Jazz Age","Wealth","The American dream"]],
+ ["Dune","Frank Herbert","9780441172719",896,1965,0,"currently-reading",["Science fiction","Ecology","Power"]],
+ ["The Handmaid's Tale","Margaret Atwood","9780385490818",311,1985,4,"read",["Dystopia","Feminism","Control"]],
+ ["Beloved","Toni Morrison","9781400033416",324,1987,0,"to-read",["Memory","Slavery","Motherhood"]],
+ ["The Road","Cormac McCarthy","9780307387899",287,2006,4,"read",["Post-apocalyptic","Fathers and sons","Survival"]],
+ ["Circe","Madeline Miller","9780316556347",393,2018,5,"read",["Greek mythology","Witchcraft","Exile"]],
+ ["Born a Crime","Trevor Noah","9780399588174",304,2016,5,"read",["Memoir","South Africa","Apartheid"]],
+ ["Disgrace","J.M. Coetzee","9780140296402",220,1999,0,"to-read",["South Africa","Shame","Post-apartheid"]],
+ ["Life of Pi","Yann Martel","9780156027328",326,2001,3,"read",["Survival","Faith","Storytelling"]],
+ ["The Book Thief","Markus Zusak","9780375842207",552,2005,4,"read",["World War II","Death","The power of words"]]
+];
+
+let books = [], view = "spine", openId = null;
+
+/* ---------- storage ---------- */
+function load(){
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; return; } }catch(e){}
+  books = SAMPLES.map(([title,author,isbn,pages,year,myRating,shelf,themes],i)=>({id:"s"+i,title,author,isbn,pages,year,myRating,avgRating:0,shelf,themes,notes:"",dateAdded:"",dateRead:"",cover:"",color:"",sample:true,themesTried:true}));
+}
+let saveT;
+function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view})); }catch(e){} }, 250); }
+
+/* ---------- helpers ---------- */
+function hash(s){ let h = 2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h,16777619); } return h>>>0; }
+function colorOf(b){ return b.color || CLOTH[hash(b.title+b.author) % CLOTH.length]; }
+function inkOn(hex){ const n = parseInt(hex.slice(1),16), r=n>>16, g=n>>8&255, bl=n&255; return (0.299*r+0.587*g+0.114*bl) > 150 ? "#1c1a17" : "#f3ead8"; }
+function coverUrl(b){ return b.cover || (b.isbn ? `https://covers.openlibrary.org/b/isbn/${b.isbn}-M.jpg?default=false` : ""); }
+function cleanIsbn(s){ return String(s||"").replace(/[^0-9Xx]/g,"").toUpperCase(); }
+function genCover(b){ const c = colorOf(b); return `<div class="gen" style="background-color:${c};color:${inkOn(c)}"><b>${esc(b.title)}</b><span>${esc(b.author)}</span></div>`; }
+function coverHtml(b){
+  const u = coverUrl(b);
+  return u ? `<img src="${esc(u)}" alt="Cover of ${esc(b.title)}" loading="lazy" data-cov="${esc(b.id)}">` : genCover(b);
+}
+// A cover that fails to load is swapped for a drawn one.
+document.addEventListener("error", e => {
+  const img = e.target; if(!(img instanceof HTMLImageElement) || !img.dataset.cov) return;
+  const b = books.find(x=>x.id===img.dataset.cov); if(!b) return;
+  const t = document.createElement("template"); t.innerHTML = genCover(b); img.replaceWith(t.content);
+}, true);
+function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,"/"); }
+
+/* ---------- shelf ---------- */
+function visible(){
+  const q = $("#q").value.trim().toLowerCase(), f = $("#fShelf").value, s = $("#sort").value;
+  const last = a => { const p = a.trim().split(/\s+/); return (p[p.length-1]+" "+a).toLowerCase(); };
+  const bare = t => t.toLowerCase().replace(/^(the|a|an)\s+/,"");
+  let list = books.filter(b => (!f || b.shelf===f) && (!q || (b.title+" "+b.author).toLowerCase().includes(q)));
+  const cmp = {
+    author:(a,b)=> last(a.author).localeCompare(last(b.author)) || bare(a.title).localeCompare(bare(b.title)),
+    title:(a,b)=> bare(a.title).localeCompare(bare(b.title)),
+    rating:(a,b)=> (b.myRating||0)-(a.myRating||0) || bare(a.title).localeCompare(bare(b.title)),
+    added:(a,b)=> (b.dateAdded||"").localeCompare(a.dateAdded||"")
+  }[s];
+  return list.sort(cmp);
+}
+function render(){
+  const shelf = $("#shelf"), list = visible();
+  shelf.className = "shelf" + (view==="cover" ? " covers" : "");
+  $("#vSpine").setAttribute("aria-pressed", view==="spine"); $("#vCover").setAttribute("aria-pressed", view==="cover");
+  $("#sampleNote").hidden = !books.some(b=>b.sample);
+  const read = books.filter(b=>b.shelf==="read").length;
+  $("#count").textContent = books.length ? `${books.length} ${books.length===1?"book":"books"} · ${read} read` + (list.length!==books.length ? ` · showing ${list.length}` : "") : "";
+  if(!list.length){
+    shelf.innerHTML = `<div class="empty">${books.length ? "No books match that search." : "Your shelf is empty. Import your Goodreads library or scan a barcode to add your first book."}</div>`;
+    return;
+  }
+  const small = matchMedia("(max-width:640px)").matches;
+  shelf.innerHTML = list.map(b=>{
+    const label = `${esc(b.title)} by ${esc(b.author)}`;
+    if(view==="cover") return `<div class="slot"><button class="face" data-id="${esc(b.id)}" aria-label="${label}">${coverHtml(b)}</button></div>`;
+    const h = hash(b.title), c = colorOf(b);
+    const w = Math.round(Math.max(24, Math.min(62, (b.pages||280)/11)));
+    const ht = (small?130:156) + h % (small?44:50);
+    return `<div class="slot"><button class="spine${w>40?" wide":""}" data-id="${esc(b.id)}" aria-label="${label}" style="width:${w}px;height:${ht}px;background-color:${c};color:${inkOn(c)}"><span class="t">${esc(b.title)}</span><span class="a">${esc(b.author.split(/\s+/).pop())}</span></button></div>`;
+  }).join("");
+}
+$("#shelf").addEventListener("click", e => { const el = e.target.closest("[data-id]"); if(el) openBook(el.dataset.id, el); });
+["q","fShelf","sort"].forEach(id => $("#"+id).addEventListener("input", render));
+$("#vSpine").onclick = () => { view="spine"; save(); render(); };
+$("#vCover").onclick = () => { view="cover"; save(); render(); };
+$("#clearSamples").onclick = () => { books = books.filter(b=>!b.sample); save(); render(); };
+
+/* ---------- book detail ---------- */
+const SHELVES = {"read":"Read","currently-reading":"Currently reading","to-read":"Want to read"};
+function openBook(id, fromEl){
+  const b = books.find(x=>x.id===id); if(!b) return;
+  openId = id; drawBook(b);
+  const d = $("#dBook"); d.showModal();
+  if(fromEl){
+    fromEl.classList.add("out");
+    const cov = d.querySelector(".cov"), a = fromEl.getBoundingClientRect(), z = cov.getBoundingClientRect();
+    if(z.width && !matchMedia("(prefers-reduced-motion:reduce)").matches){
+      cov.animate([{transform:`translate(${a.left-z.left}px,${a.top-z.top}px) scale(${a.width/z.width},${a.height/Math.max(z.height,1)})`,transformOrigin:"0 0",opacity:.6},{transform:"none",transformOrigin:"0 0",opacity:1}],{duration:420,easing:"cubic-bezier(.2,.8,.2,1)"});
+    }
+  }
+  if(!b.themesTried && b.isbn){ b.themesTried = true; save(); lookup(b.isbn).then(info=>{
+    if(!info) return;
+    const have = new Set(b.themes.map(t=>t.toLowerCase()));
+    for(const t of info.themes){ if(b.themes.length>=8) break; if(!have.has(t.toLowerCase())){ b.themes.push(t); have.add(t.toLowerCase()); } }
+    if(!b.pages && info.pages) b.pages = info.pages;
+    save(); if(openId===id) drawThemes(b);
+  }); }
+}
+function drawBook(b){
+  const meta = [b.year, b.pages ? b.pages+" pages" : "", b.isbn ? "ISBN "+b.isbn : ""].filter(Boolean).join(" · ");
+  $("#bookBody").innerHTML = `
+    <button class="close" data-close aria-label="Put back on the shelf">×</button>
+    <div class="book">
+      <div class="cov">${coverHtml(b)}</div>
+      <div style="min-width:0">
+        <h2>${esc(b.title)}</h2>
+        <p class="by">${esc(b.author)}</p>
+        <p class="meta">${esc(meta)}</p>
+        <div class="row2">
+          <div><div class="lab" style="margin-top:0">My rating</div><div class="stars" id="stars"></div></div>
+          <div><div class="lab" style="margin-top:0"><label for="bShelf">Status</label></div>
+            <select id="bShelf">${Object.entries(SHELVES).map(([k,v])=>`<option value="${k}"${b.shelf===k?" selected":""}>${v}</option>`).join("")}</select></div>
+        </div>
+        <div class="lab">Themes</div>
+        <div class="chips" id="themes"></div>
+        <div class="lab"><label for="bNotes">Notes</label></div>
+        <textarea id="bNotes" placeholder="What stayed with you?">${esc(b.notes)}</textarea>
+        ${b.dateRead ? `<p class="dim" style="margin-top:8px">Finished ${esc(b.dateRead)}</p>` : ""}
+      </div>
+    </div>
+    <div class="foot">
+      <span id="rmWrap"><button class="btn danger" id="rm">Remove from library</button></span>
+      <button class="btn primary" data-close>Put back on the shelf</button>
+    </div>`;
+  drawStars(b); drawThemes(b);
+  $("#bShelf").onchange = e => { b.shelf = e.target.value; if(b.shelf==="read" && !b.dateRead) b.dateRead = today(); save(); };
+  $("#bNotes").oninput = e => { b.notes = e.target.value; save(); };
+  $("#rm").onclick = () => {
+    $("#rmWrap").innerHTML = `<span class="dim">Remove this book? </span><button class="btn danger" id="rmYes">Yes, remove</button> <button class="btn" id="rmNo">Keep</button>`;
+    $("#rmYes").onclick = () => { books = books.filter(x=>x.id!==b.id); save(); $("#dBook").close(); };
+    $("#rmNo").onclick = () => drawBook(b);
+  };
+}
+function drawStars(b){
+  const el = $("#stars");
+  el.innerHTML = [1,2,3,4,5].map(n=>`<button class="${n<=(b.myRating||0)?"on":""}" data-n="${n}" aria-label="${n} star${n>1?"s":""}">★</button>`).join("")
+    + (b.avgRating ? `<small>Goodreads average ${Number(b.avgRating).toFixed(2)}</small>` : "");
+  el.onclick = e => { const n = +e.target.dataset.n; if(!n) return; b.myRating = b.myRating===n ? 0 : n; save(); drawStars(b); };
+}
+function drawThemes(b){
+  const el = $("#themes"); if(!el) return;
+  el.innerHTML = b.themes.map((t,i)=>`<span class="chip">${esc(t)}<button data-i="${i}" aria-label="Remove ${esc(t)}">×</button></span>`).join("")
+    + `<input type="text" id="addTheme" placeholder="Add a theme" aria-label="Add a theme">`;
+  el.onclick = e => { const i = e.target.dataset.i; if(i===undefined) return; b.themes.splice(+i,1); save(); drawThemes(b); };
+  $("#addTheme").onkeydown = e => { if(e.key!=="Enter") return; e.preventDefault(); const v = e.target.value.trim(); if(!v) return; b.themes.push(v); save(); drawThemes(b); $("#addTheme").focus(); };
+}
+$("#dBook").addEventListener("close", () => { openId = null; render(); });
+
+/* ---------- dialogs ---------- */
+document.addEventListener("click", e => { if(e.target.closest("[data-close]")) e.target.closest("dialog").close(); });
+document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e => { if(e.target===d) d.close(); }));
+
+/* ---------- Goodreads import ---------- */
+function parseCsv(text){
+  const rows = []; let row = [], cur = "", q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=c; }
+    else if(c==='"') q = true;
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n") i++; row.push(cur); cur=""; if(row.length>1||row[0]!=="") rows.push(row); row=[]; }
+    else cur+=c;
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+function importCsv(text){
+  const rows = parseCsv(text.replace(/^﻿/,""));
+  const head = (rows.shift()||[]).map(h=>h.trim());
+  const col = n => head.indexOf(n);
+  if(col("Title")<0 || col("Author")<0) throw new Error("That does not look like a Goodreads export. The file should be called goodreads_library_export.csv.");
+  const g = (r,n) => { const i = col(n); return i<0 ? "" : (r[i]||"").trim(); };
+  let added = 0, updated = 0;
+  books = books.filter(b=>!b.sample);
+  for(const r of rows){
+    const title = g(r,"Title").replace(/\s*\([^()]*#[\d.\-–]+\)\s*$/,""); if(!title) continue;
+    const gid = g(r,"Book Id"), isbn = cleanIsbn(g(r,"ISBN13")) || cleanIsbn(g(r,"ISBN"));
+    const shelf = SHELVES[g(r,"Exclusive Shelf")] ? g(r,"Exclusive Shelf") : "read";
+    const tags = g(r,"Bookshelves").split(",").map(s=>s.trim()).filter(s=>s && !SHELVES[s]).map(s=>s.replace(/-/g," "));
+    const notes = [g(r,"My Review"), g(r,"Private Notes")].filter(Boolean).join("\n\n").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"");
+    const data = {title, author:g(r,"Author"), isbn, pages:+g(r,"Number of Pages")||0, year:+g(r,"Original Publication Year")||+g(r,"Year Published")||"",
+      myRating:+g(r,"My Rating")||0, avgRating:+g(r,"Average Rating")||0, shelf, dateRead:g(r,"Date Read"), dateAdded:g(r,"Date Added")};
+    const old = books.find(b => (gid && b.gid===gid) || (isbn && b.isbn===isbn));
+    if(old){ Object.assign(old, data, {gid}); if(notes && !old.notes) old.notes = notes; updated++; }
+    else { books.push({id:"g"+(gid||hash(title+data.author)), gid, ...data, themes:tags, notes, cover:"", color:"", themesTried:false}); added++; }
+  }
+  save(); render();
+  return {added, updated};
+}
+function readCsvFile(file){
+  const st = $("#importStatus"); st.className = "status"; st.textContent = "Reading…";
+  file.text().then(t => { const r = importCsv(t); st.textContent = `Added ${r.added} ${r.added===1?"book":"books"}` + (r.updated ? ` and updated ${r.updated} already on your shelf.` : "."); })
+    .catch(e => { st.className = "status err"; st.textContent = e.message; });
+}
+$("#btnImport").onclick = () => { $("#importStatus").textContent = ""; $("#dImport").showModal(); };
+$("#csvFile").onchange = e => { if(e.target.files[0]) readCsvFile(e.target.files[0]); e.target.value = ""; };
+const drop = $("#drop");
+["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if(f) readCsvFile(f); });
+$("#btnBackup").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({books},null,1)],{type:"application/json"}));
+  a.download = "shelf-life-backup.json"; a.click(); URL.revokeObjectURL(a.href);
+};
+$("#restoreFile").onchange = e => {
+  const f = e.target.files[0], st = $("#importStatus"); if(!f) return; e.target.value = "";
+  f.text().then(t => { const d = JSON.parse(t); if(!Array.isArray(d.books)) throw 0; books = d.books; save(); render(); st.className="status"; st.textContent = `Restored ${books.length} books.`; })
+    .catch(() => { st.className="status err"; st.textContent = "That file is not a Shelf Life backup."; });
+};
+
+/* ---------- book lookup (Open Library, then Google Books) ---------- */
+const JUNK = /accessible book|protected daisy|in library|large type|open library|nyt:|bestseller|reading level|fiction, general|general$|overdrive|lending library|translations into|internet archive|^fiction$|, fiction|reviewed|award:|\(imaginary|[:=_]/i;
+async function lookup(isbn){
+  try{
+    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const d = (await r.json())["ISBN:"+isbn];
+    if(d && d.title){
+      const seen = new Set();
+      const themes = (d.subjects||[]).map(s=>(s.name||s).trim()).filter(s=>{ const k = s.toLowerCase().replace(/[^a-z0-9]/g,""); if(!s || s.length>=32 || JUNK.test(s) || seen.has(k)) return false; seen.add(k); return true; }).slice(0,8);
+      return {title:d.title, author:(d.authors||[]).map(a=>a.name).join(", ") || "Unknown author", pages:d.number_of_pages||0,
+        year:(String(d.publish_date||"").match(/\d{4}/)||[""])[0], themes, cover:(d.cover && (d.cover.medium||d.cover.large)) || ""};
+    }
+  }catch(e){}
+  try{
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const v = ((await r.json()).items||[])[0]; if(!v) return null; const i = v.volumeInfo;
+    return {title:i.title, author:(i.authors||[]).join(", ") || "Unknown author", pages:i.pageCount||0, year:(i.publishedDate||"").slice(0,4),
+      themes:(i.categories||[]).slice(0,8), cover:((i.imageLinks||{}).thumbnail||"").replace(/^http:/,"https:")};
+  }catch(e){ return null; }
+}
+
+/* ---------- barcode scanning ---------- */
+let reader = null, busy = false;
+function scanStatus(msg, err){ const st = $("#scanStatus"); st.className = "status" + (err?" err":""); st.textContent = msg; }
+function startCamera(){
+  if(!window.ZXing){ scanStatus("The scanner could not load. Type the ISBN instead.", true); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ scanStatus("This browser cannot open the camera here. Use a photo of the barcode or type the ISBN.", true); return; }
+  const hints = new Map(); hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13]);
+  reader = new ZXing.BrowserMultiFormatReader(hints);
+  scanStatus("Starting the camera…");
+  reader.decodeFromConstraints({video:{facingMode:"environment"}}, $("#video"), res => { if(res) gotCode(res.getText()); })
+    .then(() => { if(!busy) scanStatus("Looking for a barcode…"); })
+    .catch(() => scanStatus("No camera available. Use a photo of the barcode or type the ISBN.", true));
+}
+function stopCamera(){ if(reader){ try{ reader.reset(); }catch(e){} reader = null; } }
+async function gotCode(raw){
+  const isbn = cleanIsbn(raw); if(busy) return;
+  if(!(isbn.length===13 && /^97[89]/.test(isbn)) && isbn.length!==10){ scanStatus("That is not a book barcode. Look for the one starting with 978 or 979.", true); return; }
+  busy = true; scanStatus(`Found ${isbn}. Looking it up…`);
+  const have = books.find(b=>b.isbn===isbn);
+  if(have){ busy = false; scanStatus(`"${have.title}" is already on your shelf.`); return; }
+  const info = await lookup(isbn); busy = false;
+  if(!info){ scanStatus(`No details found for ISBN ${isbn}. Check the number and try again.`, true); return; }
+  const b = {id:"b"+isbn, isbn, title:info.title, author:info.author, pages:info.pages, year:info.year, myRating:0, avgRating:0, shelf:"to-read",
+    themes:info.themes, notes:"", dateAdded:today(), dateRead:"", cover:info.cover, color:"", themesTried:true};
+  scanStatus("");
+  $("#foundBox").innerHTML = `<div class="found">${coverHtml(b)}<div><strong>${esc(b.title)}</strong><span class="dim">${esc(b.author)}${b.year?" · "+esc(b.year):""}</span></div><button class="btn primary" id="addFound">Add to shelf</button></div>`;
+  $("#addFound").onclick = () => { books.push(b); save(); render(); $("#foundBox").innerHTML = ""; scanStatus(`Added "${b.title}". Scan the next one, or close.`); };
+}
+$("#btnScan").onclick = () => { $("#foundBox").innerHTML = ""; $("#isbnInput").value = ""; $("#dScan").showModal(); startCamera(); };
+$("#dScan").addEventListener("close", stopCamera);
+$("#isbnForm").onsubmit = e => { e.preventDefault(); gotCode($("#isbnInput").value); };
+$("#photoFile").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if(!f || !window.ZXing) return;
+  const url = URL.createObjectURL(f); scanStatus("Reading the photo…");
+  try{ const res = await new ZXing.BrowserMultiFormatReader().decodeFromImageUrl(url); gotCode(res.getText()); }
+  catch(err){ scanStatus("No barcode found in that photo. Try a closer, sharper shot.", true); }
+  URL.revokeObjectURL(url);
+};
+
+load(); render();
+addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 150); });
+</script>
+</body>
+</html>
