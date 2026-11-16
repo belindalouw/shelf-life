@@ -73,6 +73,13 @@ h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
 .gen b{font:400 15px/1.15 var(--display);overflow-wrap:anywhere}
 .gen span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
 .out{visibility:hidden}
+#shelf{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#shelf img{-webkit-user-drag:none;pointer-events:none}
+.hint{align-self:center;width:100%;text-align:center;color:rgba(239,230,214,.38);font-size:13px;height:var(--row);display:flex;align-items:center;justify-content:center}
+.slot.dragging>*{opacity:.22}
+.ghost{position:fixed;z-index:50;pointer-events:none;margin:0;transform:rotate(-3deg) scale(1.06);transform-origin:50% 80%;box-shadow:0 18px 30px rgba(0,0,0,.55);transition:none}
+.is-dragging,.is-dragging *{cursor:grabbing!important}
+.is-dragging .spine:hover,.is-dragging .face:hover{transform:none}
 
 dialog{border:0;padding:0;background:var(--paper);color:var(--paper-ink);border-radius:10px;width:min(820px,calc(100vw - 24px));max-height:calc(100vh - 24px);box-shadow:0 40px 90px rgba(0,0,0,.6);color-scheme:light}
 dialog::backdrop{background:rgba(10,15,19,.72);animation:fade .35s ease}
@@ -157,6 +164,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <option value="title">Sort by title</option>
     <option value="rating">Sort by my rating</option>
     <option value="added">Sort by date added</option>
+    <option value="custom">My arrangement</option>
   </select>
   <span class="spacer"></span>
   <div class="seg" role="group" aria-label="Shelf view">
@@ -170,7 +178,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
   <button class="link" id="clearSamples">Clear the examples</button>
 </div></div>
 
-<main class="case"><div class="case-inner"><div class="shelf" id="shelf"></div></div></main>
+<main class="case"><div class="case-inner"><div id="shelf"></div></div></main>
 
 <dialog id="dBook"><div class="dlg" id="bookBody"></div></dialog>
 
@@ -237,15 +245,15 @@ const SAMPLES = [
  ["The Book Thief","Markus Zusak","9780375842207",552,2005,4,"read",["World War II","Death","The power of words"]]
 ];
 
-let books = [], view = "spine", openId = null;
+let books = [], view = "spine", openId = null, arr = [];
 
 /* ---------- storage ---------- */
 function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; return; } }catch(e){}
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; arr = Array.isArray(d.arr) ? d.arr : []; if(d.sort) $("#sort").value = d.sort; return; } }catch(e){}
   books = SAMPLES.map(([title,author,isbn,pages,year,myRating,shelf,themes],i)=>({id:"s"+i,title,author,isbn,pages,year,myRating,avgRating:0,shelf,themes,notes:"",dateAdded:"",dateRead:"",cover:"",color:"",sample:true,themesTried:true}));
 }
 let saveT;
-function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view})); }catch(e){} }, 250); }
+function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view,arr,sort:$("#sort").value})); }catch(e){} }, 250); }
 
 /* ---------- helpers ---------- */
 function hash(s){ let h = 2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h,16777619); } return h>>>0; }
@@ -267,11 +275,31 @@ document.addEventListener("error", e => {
 function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,"/"); }
 
 /* ---------- shelf ---------- */
+function filtering(){ return !!($("#q").value.trim() || $("#fShelf").value); }
+function matcher(){
+  const q = $("#q").value.trim().toLowerCase(), f = $("#fShelf").value;
+  return b => (!f || b.shelf===f) && (!q || (b.title+" "+b.author).toLowerCase().includes(q));
+}
+// In "My arrangement", arr holds the shelves: a list of rows, each a list of book ids.
+function normArr(){
+  const ids = new Set(books.map(b=>b.id)), seen = new Set();
+  arr = arr.map(r => r.filter(id => ids.has(id) && !seen.has(id) && seen.add(id))).filter(r => r.length);
+  const missing = books.filter(b => !seen.has(b.id)).map(b => b.id);
+  if(missing.length){ if(!arr.length) arr.push([]); arr[arr.length-1].push(...missing); }
+}
+function shelfRows(){
+  const ok = matcher();
+  if($("#sort").value !== "custom") return [visible()];
+  normArr();
+  const byId = new Map(books.map(b=>[b.id,b]));
+  const rows = arr.map(r => r.map(id => byId.get(id)).filter(ok));
+  return filtering() ? rows.filter(r => r.length) : [...rows, []];
+}
 function visible(){
-  const q = $("#q").value.trim().toLowerCase(), f = $("#fShelf").value, s = $("#sort").value;
+  const s = $("#sort").value;
   const last = a => { const p = a.trim().split(/\s+/); return (p[p.length-1]+" "+a).toLowerCase(); };
   const bare = t => t.toLowerCase().replace(/^(the|a|an)\s+/,"");
-  let list = books.filter(b => (!f || b.shelf===f) && (!q || (b.title+" "+b.author).toLowerCase().includes(q)));
+  let list = books.filter(matcher());
   const cmp = {
     author:(a,b)=> last(a.author).localeCompare(last(b.author)) || bare(a.title).localeCompare(bare(b.title)),
     title:(a,b)=> bare(a.title).localeCompare(bare(b.title)),
@@ -281,28 +309,114 @@ function visible(){
   return list.sort(cmp);
 }
 function render(){
-  const shelf = $("#shelf"), list = visible();
-  shelf.className = "shelf" + (view==="cover" ? " covers" : "");
+  const shelf = $("#shelf"), rows = shelfRows(), list = rows.flat(), custom = $("#sort").value==="custom";
   $("#vSpine").setAttribute("aria-pressed", view==="spine"); $("#vCover").setAttribute("aria-pressed", view==="cover");
   $("#sampleNote").hidden = !books.some(b=>b.sample);
   const read = books.filter(b=>b.shelf==="read").length;
   $("#count").textContent = books.length ? `${books.length} ${books.length===1?"book":"books"} · ${read} read` + (list.length!==books.length ? ` · showing ${list.length}` : "") : "";
   if(!list.length){
-    shelf.innerHTML = `<div class="empty">${books.length ? "No books match that search." : "Your shelf is empty. Import your Goodreads library or scan a barcode to add your first book."}</div>`;
+    shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books match that search." : "Your shelf is empty. Import your Goodreads library or scan a barcode to add your first book."}</div></div>`;
     return;
   }
   const small = matchMedia("(max-width:640px)").matches;
-  shelf.innerHTML = list.map(b=>{
+  const cls = "shelf" + (view==="cover" ? " covers" : "");
+  shelf.innerHTML = rows.map(row => `<div class="${cls}">` + (row.length ? "" : `<div class="hint">Drag a book here to start a new shelf</div>`) + row.map(b=>{
     const label = `${esc(b.title)} by ${esc(b.author)}`;
     if(view==="cover") return `<div class="slot"><button class="face" data-id="${esc(b.id)}" aria-label="${label}">${coverHtml(b)}</button></div>`;
     const h = hash(b.title), c = colorOf(b);
     const w = Math.round(Math.max(24, Math.min(62, (b.pages||280)/11)));
     const ht = (small?130:156) + h % (small?44:50);
     return `<div class="slot"><button class="spine${w>40?" wide":""}" data-id="${esc(b.id)}" aria-label="${label}" style="width:${w}px;height:${ht}px;background-color:${c};color:${inkOn(c)}"><span class="t">${esc(b.title)}</span><span class="a">${esc(b.author.split(/\s+/).pop())}</span></button></div>`;
-  }).join("");
+  }).join("") + "</div>").join("");
 }
-$("#shelf").addEventListener("click", e => { const el = e.target.closest("[data-id]"); if(el) openBook(el.dataset.id, el); });
-["q","fShelf","sort"].forEach(id => $("#"+id).addEventListener("input", render));
+$("#shelf").addEventListener("click", e => { if(justDragged) return; const el = e.target.closest("[data-id]"); if(el) openBook(el.dataset.id, el); });
+["q","fShelf","sort"].forEach(id => $("#"+id).addEventListener("input", () => { save(); render(); }));
+
+/* ---------- click and hold to rearrange ---------- */
+let drag = null, justDragged = false;
+const shelfEl = $("#shelf");
+shelfEl.addEventListener("dragstart", e => e.preventDefault());
+shelfEl.addEventListener("contextmenu", e => { if(drag) e.preventDefault(); });
+shelfEl.addEventListener("pointerdown", e => {
+  if(e.button || filtering() || openId) return;
+  const el = e.target.closest("[data-id]"); if(!el) return;
+  drag = {id:el.dataset.id, x:e.clientX, y:e.clientY, pid:e.pointerId, active:false, touch:e.pointerType!=="mouse"};
+  if(drag.touch) drag.timer = setTimeout(startDrag, 320);   // on a touch screen, hold still briefly; moving first scrolls the page
+});
+function startDrag(){
+  if(!drag || drag.active) return;
+  drag.active = true;
+  if($("#sort").value !== "custom"){
+    // keep the shelves exactly as they look right now, then let the reader rearrange from there
+    const tops = new Map();
+    shelfEl.querySelectorAll(".slot").forEach(s => { const t = s.offsetTop; if(!tops.has(t)) tops.set(t, []); tops.get(t).push(s.firstElementChild.dataset.id); });
+    arr = [...tops.values()];
+    $("#sort").value = "custom"; render();
+  }
+  const el = [...shelfEl.querySelectorAll("[data-id]")].find(n => n.dataset.id===drag.id);
+  if(!el){ drag = null; return; }
+  const r = el.getBoundingClientRect();
+  drag.slot = el.parentElement; drag.ox = drag.x - r.left; drag.oy = drag.y - r.top;
+  const g = drag.ghost = el.cloneNode(true);
+  g.removeAttribute("data-id"); g.classList.add("ghost");
+  g.style.width = r.width+"px"; g.style.height = r.height+"px";
+  document.body.append(g); moveGhost(drag.x, drag.y);
+  drag.slot.classList.add("dragging"); document.body.classList.add("is-dragging");
+  if(drag.touch && navigator.vibrate) navigator.vibrate(12);
+  drag.lx = drag.x; drag.ly = drag.y;
+  // holding a book near the top or bottom edge scrolls the bookcase
+  (function edge(){
+    if(!drag || !drag.active) return;
+    const d = drag.ly < 70 ? -14 : drag.ly > innerHeight - 70 ? 14 : 0;
+    if(d){ scrollBy(0, d); place(drag.lx, drag.ly); }
+    requestAnimationFrame(edge);
+  })();
+}
+function moveGhost(x, y){ drag.ghost.style.left = (x-drag.ox)+"px"; drag.ghost.style.top = (y-drag.oy)+"px"; }
+function place(x, y){
+  const t = document.elementFromPoint(x, y); if(!t) return;
+  const slot = t.closest(".slot");
+  if(slot){
+    if(slot===drag.slot || !shelfEl.contains(slot)) return;
+    const r = slot.getBoundingClientRect();
+    slot.parentElement.insertBefore(drag.slot, x > r.left + r.width/2 ? slot.nextSibling : slot);
+    return;
+  }
+  const sh = t.closest(".shelf"); if(!sh || !shelfEl.contains(sh)) return;
+  const others = [...sh.querySelectorAll(".slot")].filter(s => s!==drag.slot);
+  if(others.length){
+    const lr = others[others.length-1].getBoundingClientRect();
+    if(!(x > lr.right && y > lr.top && y < lr.bottom) && sh===drag.slot.parentElement) return;
+    if(sh!==drag.slot.parentElement && !(y > lr.top - 40)) return;
+  }
+  const hint = sh.querySelector(".hint"); if(hint) hint.remove();
+  sh.append(drag.slot);
+}
+function endDrag(){
+  arr = [...shelfEl.querySelectorAll(".shelf")].map(s => [...s.querySelectorAll("[data-id]")].map(n => n.dataset.id)).filter(r => r.length);
+  drag.ghost.remove(); document.body.classList.remove("is-dragging");
+  justDragged = true; setTimeout(() => justDragged = false, 60);
+  save(); render();
+}
+document.addEventListener("pointermove", e => {
+  if(!drag || e.pointerId!==drag.pid) return;
+  if(!drag.active){
+    if(Math.hypot(e.clientX-drag.x, e.clientY-drag.y) < 7) return;
+    if(drag.touch){ clearTimeout(drag.timer); drag = null; return; }
+    startDrag(); if(!drag) return;
+  }
+  drag.lx = e.clientX; drag.ly = e.clientY;
+  moveGhost(e.clientX, e.clientY); place(e.clientX, e.clientY);
+});
+function dragOver(e){
+  if(!drag || e.pointerId!==drag.pid) return;
+  clearTimeout(drag.timer);
+  if(drag.active) endDrag();
+  drag = null;
+}
+document.addEventListener("pointerup", dragOver);
+document.addEventListener("pointercancel", dragOver);
+document.addEventListener("touchmove", e => { if(drag && drag.active) e.preventDefault(); }, {passive:false});
 $("#vSpine").onclick = () => { view="spine"; save(); render(); };
 $("#vCover").onclick = () => { view="cover"; save(); render(); };
 $("#clearSamples").onclick = () => { books = books.filter(b=>!b.sample); save(); render(); };
