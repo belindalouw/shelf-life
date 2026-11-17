@@ -158,6 +158,98 @@ body.editing nav.tabs a[aria-current=page]{color:var(--ink-dim)}
 .win.storm .flash{animation:flash 7s infinite}
 @keyframes flash{0%,91%,100%{opacity:0}92%{opacity:.8}94%{opacity:.1}95%{opacity:.55}97%{opacity:0}}
 @media (min-width:1300px){.win{right:-36px}}
+.win .city,.win .shoot{display:none}
+.win .city{inset:0;background:url(velaris-night.webp) 50% 0/cover no-repeat;z-index:3}
+.win .shoot{top:9%;left:62%;width:54px;height:1.6px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0));rotate:-24deg;opacity:0;animation:shoot 13s linear infinite 4s}
+@keyframes shoot{0%,90%{opacity:0;translate:0 0}91%{opacity:1}96%{opacity:0;translate:-110px 48px}100%{opacity:0;translate:-110px 48px}}
+@keyframes twinkle{to{opacity:.7}}
+
+/* ---------- the Night Court room ---------- */
+body[data-room=night]{--wall:#0b0d1f;--wall-2:#151935;--brass:#c3cbff;
+  background:radial-gradient(760px 560px at 100% 0,var(--glow,transparent),transparent 70%) no-repeat,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'%3E%3Cpath d='M44 0L88 44L44 88L0 44Z' fill='none' stroke='%23aab4e8' stroke-opacity='.11'/%3E%3Cpath d='M44 6L82 44L44 82L6 44Z' fill='none' stroke='%23aab4e8' stroke-opacity='.05'/%3E%3Cg fill='%23c9d1f5' fill-opacity='.2'%3E%3Cpath d='M34 53l7-10 3 4 5-8 8 14z'/%3E%3Cpath d='M39 31.6L39.672 33.328L41.4 34L39.672 34.672L39 36.4L38.328 34.672L36.6 34L38.328 33.328Z'/%3E%3Cpath d='M45 27L45.84 29.16L48 30L45.84 30.84L45 33L44.16 30.84L42 30L44.16 29.16Z'/%3E%3Cpath d='M51 31.6L51.672 33.328L53.4 34L51.672 34.672L51 36.4L50.328 34.672L48.6 34L50.328 33.328Z'/%3E%3C/g%3E%3Cg fill='%23dfe5ff' fill-opacity='.3'%3E%3Cpath d='M0 -4L1.12 -1.12L4 0L1.12 1.12L0 4L-1.12 1.12L-4 0L-1.12 -1.12Z'/%3E%3Cpath d='M88 -4L89.12 -1.12L92 0L89.12 1.12L88 4L86.88 1.12L84 0L86.88 -1.12Z'/%3E%3Cpath d='M0 84L1.12 86.88L4 88L1.12 89.12L0 92L-1.12 89.12L-4 88L-1.12 86.88Z'/%3E%3Cpath d='M88 84L89.12 86.88L92 88L89.12 89.12L88 92L86.88 89.12L84 88L86.88 86.88Z'/%3E%3C/g%3E%3Cg fill='%23fff' fill-opacity='.28'%3E%3Ccircle cx='18' cy='13' r='.8'/%3E%3Ccircle cx='70' cy='22' r='.7'/%3E%3Ccircle cx='13' cy='64' r='.8'/%3E%3Ccircle cx='66' cy='73' r='.6'/%3E%3Ccircle cx='27' cy='40' r='.5'/%3E%3C/g%3E%3C/svg%3E") 0 0/88px 88px,linear-gradient(180deg,#121539,#080918 70%)}
+body[data-room=night] nav.tabs{background:#0a0c1d;border-top-color:rgba(195,203,255,.18)}
+body[data-room=night] #custom{background:#12152e;border-color:rgba(195,203,255,.22)}
+body[data-room=night] .case{margin-top:140px}
+body[data-room=night] .case-inner{border:18px solid #1b1f38;border-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232a2f4f'/%3E%3Cstop offset='1' stop-color='%23151830'/%3E%3C/linearGradient%3E%3ClinearGradient id='s' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23eef1ff'/%3E%3Cstop offset='.5' stop-color='%238d96bf'/%3E%3Cstop offset='1' stop-color='%23d5dbf7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='96' height='96' fill='url(%23w)'/%3E%3Crect x='3.5' y='3.5' width='89' height='89' fill='none' stroke='url(%23s)' stroke-width='1.6'/%3E%3Crect x='21.5' y='21.5' width='53' height='53' fill='none' stroke='url(%23s)' stroke-width='1.1'/%3E%3Ccircle cx='13' cy='13' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M13 7.5L14.6 11.4L18.5 13L14.6 14.6L13 18.5L11.4 14.6L7.5 13L11.4 11.4Z' fill='%23dfe5ff'/%3E%3Ccircle cx='83' cy='13' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M83 7.5L84.6 11.4L88.5 13L84.6 14.6L83 18.5L81.4 14.6L77.5 13L81.4 11.4Z' fill='%23dfe5ff'/%3E%3Ccircle cx='13' cy='83' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M13 77.5L14.6 81.4L18.5 83L14.6 84.6L13 88.5L11.4 84.6L7.5 83L11.4 81.4Z' fill='%23dfe5ff'/%3E%3Ccircle cx='83' cy='83' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M83 77.5L84.6 81.4L88.5 83L84.6 84.6L83 88.5L81.4 84.6L77.5 83L81.4 81.4Z' fill='%23dfe5ff'/%3E%3C/svg%3E") 26/18px stretch;box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 40px rgba(120,130,230,.12);
+  background:radial-gradient(ellipse 70% 40% at 50% 0,rgba(130,140,240,.13),transparent 70%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70'%3E%3Cg fill='%23dfe5ff'%3E%3Ccircle cx='9' cy='12' r='.7' fill-opacity='.35'/%3E%3Ccircle cx='47' cy='30' r='.6' fill-opacity='.25'/%3E%3Ccircle cx='28' cy='58' r='.8' fill-opacity='.3'/%3E%3Ccircle cx='63' cy='61' r='.5' fill-opacity='.2'/%3E%3C/g%3E%3C/svg%3E") 0 0/70px 70px,linear-gradient(90deg,var(--oak-deep),var(--back) 6%,var(--back) 94%,var(--oak-deep))}
+body[data-room=night] .case-inner::before{content:"";position:absolute;bottom:100%;margin-bottom:17px;left:calc(64% - 60px);width:120px;height:36px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 36'%3E%3Cpath d='M0 36Q9 36 15 29Q31 9 60 5Q89 9 105 29Q111 36 120 36Z' fill='%231b1f38' stroke='%23aab3d9' stroke-width='1.4'/%3E%3Cpath d='M10 34Q30 14 60 10Q90 14 110 34' fill='none' stroke='%23aab3d9' stroke-opacity='.45'/%3E%3Cpath d='M46 32l8-11 3 4 6-9 10 16z' fill='%23aab3d9'/%3E%3Cpath d='M60 16l2 3h-4z' fill='%23eef1ff'/%3E%3Cg fill='%23eef1ff'%3E%3Cpath d='M53 12L53.84 14.16L56 15L53.84 15.84L53 18L52.16 15.84L50 15L52.16 14.16Z'/%3E%3Cpath d='M60 6.2L61.064 8.936L63.8 10L61.064 11.064L60 13.8L58.936 11.064L56.2 10L58.936 8.936Z'/%3E%3Cpath d='M67 12L67.84 14.16L70 15L67.84 15.84L67 18L66.16 15.84L64 15L66.16 14.16Z'/%3E%3C/g%3E%3C/svg%3E") 0 0/100% 100% no-repeat;filter:drop-shadow(0 -2px 6px rgba(150,165,255,.25));pointer-events:none}
+@media (min-width:700px){body[data-room=night] .case-inner::before{left:calc(50% - 60px)}}
+body[data-room=night] .case-inner::after{content:"";position:absolute;left:-18px;right:-18px;top:100%;margin-top:18px;height:18px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='18'%3E%3Crect width='36' height='18' fill='%2314172b'/%3E%3Cpath d='M3 18V10a15 9 0 0 1 30 0v8' fill='%230c0e1e' stroke='%238d96bf' stroke-width='1.2'/%3E%3Ccircle cx='18' cy='5' r='1' fill='%23dfe5ff'/%3E%3C/svg%3E") 0 0/36px 18px repeat-x;border-top:1px solid #8d96bf;box-shadow:0 8px 14px rgba(0,0,0,.45)}
+body[data-room=night] .shelf{background:repeating-linear-gradient(180deg,transparent 0,transparent var(--row),#d5dbf7 var(--row),#d5dbf7 calc(var(--row) + 1px),var(--oak) calc(var(--row) + 1px),var(--oak-dark) calc(var(--row) + var(--board) - 2px),#8d96bf calc(var(--row) + var(--board) - 2px),#8d96bf calc(var(--row) + var(--board) - 1px),rgba(0,0,0,.55) calc(var(--row) + var(--board)),rgba(120,135,240,.06) calc(var(--row) + var(--board) + 3px),transparent calc(var(--row) + var(--gap)))}
+body[data-room=night] .sign{background:linear-gradient(180deg,#1d2142,#0f1126);color:#e6eaff;border-color:#8d96bf;outline-color:rgba(0,0,0,.6);font-style:italic;text-shadow:0 0 10px rgba(170,185,255,.7);box-shadow:0 0 18px rgba(130,145,255,.25),3px 0 6px rgba(0,0,0,.4)}
+body[data-room=night] .ddbtn{background:linear-gradient(180deg,#e3e8fb,#9aa3cc);border-color:#4d5480;color:#161a33}
+body[data-room=night] .ddbtn::after{border-top-color:#161a33}
+body[data-room=night] .ddlist{background:#b9c1e4;border-color:#4d5480}
+body[data-room=night] .ddlist button{color:#161a33;border-top-color:rgba(77,84,128,.35)}
+body[data-room=night] .win{width:236px;height:380px;top:-134px;border:7px solid #1b1f38;border-radius:50% 50% 0 0/22% 22% 0 0;background:#05061a;box-shadow:0 0 0 2px #8d96bf,0 0 36px rgba(140,160,255,.28)}
+@media (min-width:700px){body[data-room=night] .win{width:300px;height:470px}}
+body[data-room=night] .win::before,body[data-room=night] .win::after{background:#1b1f38;box-shadow:0 0 0 1px rgba(170,179,217,.45)}
+body[data-room=night] .win::before{width:4px;margin-left:-2px}
+body[data-room=night] .win::after{top:19%;height:4px}
+body[data-room=night] .win .city{display:block}
+body[data-room=night] .win.day .city{background-image:url(velaris-day.webp)}
+body[data-room=night] .win .stars{background-image:radial-gradient(1px 1px at 45.4% 24.0%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 45.4% 36.1%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 19.7% 22.0%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 60.9% 8.6%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 31.1% 4.7%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 62.9% 25.4%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 94.6% 27.8%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 64.4% 26.5%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 8.1% 2.5%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 59.6% 32.9%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 44.3% 35.5%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 24.4% 13.1%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 65.6% 19.8%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 41.1% 23.6%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 69.9% 13.9%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 51.2% 2.2%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 75.6% 17.4%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 39.1% 40.3%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 2.1% 9.6%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 47.1% 41.2%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 42.3% 24.2%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 76.7% 12.1%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 31.9% 1.6%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 74.8% 5.8%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 69.9% 1.4%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 78.5% 8.3%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 20.1% 21.9%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 75.9% 18.2%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 13.2% 18.3%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 2.0% 36.4%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 31.2% 37.3%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 20.0% 41.8%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 63.6% 5.1%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 22.5% 11.6%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 33.6% 13.1%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 9.1% 9.6%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 25.3% 25.7%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 61.7% 6.2%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 48.4% 24.6%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 19.6% 7.3%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 80.5% 11.2%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 17.2% 26.8%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 20.9% 40.0%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 59.9% 18.3%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 12.5% 22.0%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 24.9% 29.9%,#fff 55%,transparent 62%),linear-gradient(118deg,transparent 28%,rgba(160,170,255,.10) 42%,rgba(215,195,255,.17) 49%,rgba(160,175,255,.09) 56%,transparent 70%);animation:twinkle 4s ease-in-out infinite alternate}
+body[data-room=night] .win.dusk .stars,body[data-room=night] .win.dawn .stars{opacity:.45}
+body[data-room=night] .win:is(.night,.dusk,.dawn) .shoot{display:block}
+
+/* ---------- decor you can tap ---------- */
+.decor,.fdecor{pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fdecor.lights{pointer-events:none;animation:twk 2.4s ease-in-out infinite alternate}
+.fdecor.lights::before{content:"";position:absolute;left:0;right:0;top:0;height:18px;pointer-events:auto}
+@keyframes twk{to{filter:drop-shadow(0 0 2px rgba(246,178,58,.5)) brightness(.88)}}
+.fdecor.lights.off{animation:none;filter:grayscale(1) brightness(.5)}
+.decor svg,.fdecor svg{transform-origin:50% 100%}
+.flame,.steam,.orb1,.orb2,.orb3,.sph,.tail,.eye,.zz,.wing,.tw,.shoot2{transform-box:fill-box}
+.flame{transform-origin:50% 100%;animation:flick 1.4s ease-in-out infinite alternate}
+@keyframes flick{50%{transform:scale(.9,1.08) skewX(3deg)}100%{transform:scale(1.05,.94) skewX(-3deg)}}
+.steam{animation:steam 2.6s ease-in-out infinite}
+@keyframes steam{0%{transform:translateY(3px);opacity:0}40%{opacity:1}100%{transform:translateY(-4px);opacity:0}}
+.glow{animation:pulse 3.2s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.7}}
+.orb1,.orb2,.orb3{transform-origin:center;animation:float 3.4s ease-in-out infinite alternate}
+.orb2{animation-duration:2.7s;animation-delay:-1s}.orb3{animation-duration:4.1s;animation-delay:-2s}
+@keyframes float{to{transform:translate(2px,-7px)}}
+.off .glow,.off .flame,.off .steam{opacity:0;animation:none}
+.off .lit{fill:#3b3f58;animation:none}
+.off .orb1,.off .orb2,.off .orb3{fill:#4a5078;animation:none;transform:translateY(5px)}
+.ph1,.ph2,.ph3{display:none}
+.v1 .ph0,.v2 .ph0,.v3 .ph0{display:none}
+.v1 .ph1,.v2 .ph2,.v3 .ph3{display:inline}
+.mglow{opacity:0;transition:opacity .4s}.v3 .mglow{opacity:1}
+.a-sway svg{animation:sway .8s ease-in-out}
+@keyframes sway{25%{rotate:-7deg}70%{rotate:5deg}}
+.a-hop svg{animation:hop .55s ease-out}
+@keyframes hop{40%{translate:0 -14px}70%{translate:0 0}85%{translate:0 -4px}}
+.a-swing svg{transform-origin:50% 0;animation:swing 1s ease-in-out}
+@keyframes swing{20%{rotate:8deg}45%{rotate:-6deg}70%{rotate:3deg}}
+.a-flip svg{transform-origin:50% 50%;animation:flipit 1.4s ease-in-out}
+@keyframes flipit{45%,55%{rotate:180deg}100%{rotate:360deg}}
+.a-spin .sph{transform-origin:center;animation:spin 1.3s cubic-bezier(.3,.1,.3,1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.a-cat .tail{transform-origin:0% 100%;animation:swish .9s ease-in-out}
+@keyframes swish{30%{transform:rotate(-14deg)}65%{transform:rotate(10deg)}}
+.a-cat .eye,.a-owl .eye{transform-origin:center;animation:blink .5s ease-in-out 2}
+@keyframes blink{50%{transform:scaleY(.1)}}
+.a-owl svg{animation:tilt .9s ease-in-out}
+@keyframes tilt{30%{rotate:-8deg}70%{rotate:6deg}}
+.a-nap svg{animation:breathe 1.6s ease-in-out}
+@keyframes breathe{50%{scale:1.03 1.07}}
+.zz{opacity:0}
+.a-nap .zz{animation:zz 1.6s ease-out}
+@keyframes zz{20%{opacity:1}100%{opacity:0;transform:translate(8px,-16px)}}
+.a-flap .wing{transform-origin:100% 100%;animation:flap .5s ease-in-out 3}
+@keyframes flap{50%{transform:scaleX(.55) rotate(-4deg)}}
+.a-tw .tw{transform-origin:center;animation:tw .9s ease-in-out 2}
+.a-tw .tw:nth-child(2){animation-delay:.15s}.a-tw .tw:nth-child(3){animation-delay:.3s}.a-tw .tw:nth-child(4){animation-delay:.45s}
+@keyframes tw{50%{transform:scale(1.9) rotate(45deg);fill:#fff;filter:drop-shadow(0 0 3px #fff)}}
+.shoot2{opacity:0}
+.a-shoot .shoot2{animation:shoot2 1.1s ease-out}
+@keyframes shoot2{15%{opacity:1}100%{opacity:0;transform:translate(16px,8px)}}
+@media (prefers-reduced-motion:reduce){.decor *,.fdecor *,.decor svg,.fdecor svg,.dgrid *,.fdecor.lights,.win .shoot,body[data-room=night] .win .stars{animation:none!important}}
+.dhead{margin:4px 0 8px;font:600 12px/1.3 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
+.dgrid+.dhead{margin-top:16px}
+.roomrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 14px}
+.roomrow span{font-size:13px;color:var(--ink-dim)}
 .titlerow{display:flex;align-items:center;gap:12px}
 .iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(239,230,214,.28);background:transparent;display:grid;place-items:center;color:var(--ink);padding:0}
 .iconbtn:hover{border-color:var(--ink)}
@@ -186,13 +278,13 @@ body.editing .case{margin-bottom:46vh}
 #decorEdit .seg button,#decorEdit .btn{padding:5px 10px;font-size:13px}
 #decorEdit strong{flex:1 1 100%}
 #shelf{position:relative}
-.decor{border:0;background:none;padding:0;display:block;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.decor{border:0;background:none;padding:0;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
 .decor svg,.fdecor svg{height:100%;width:auto;display:block;overflow:visible}
 .decor.flip svg,.fdecor.flip svg{transform:scaleX(-1)}
 .decor.ghost{box-shadow:none}
 .ghost{pointer-events:none!important}
 .slot.d{margin:0 4px}
-.fdecor{position:absolute;z-index:3;transform:translateX(-50%);pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+.fdecor{position:absolute;z-index:3;transform:translateX(-50%);filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
 .fdecor.lights{transform:none;left:-14px;right:-14px;height:34px;filter:drop-shadow(0 0 5px rgba(246,178,58,.85));
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 34'%3E%3Cpath d='M0 3q30 24 60 0' stroke='%23222' fill='none' stroke-width='1.3'/%3E%3Ccircle cx='14' cy='13' r='4' fill='%23fde9a8'/%3E%3Ccircle cx='30' cy='17' r='4' fill='%23f6b23a'/%3E%3Ccircle cx='46' cy='13' r='4' fill='%23fde9a8'/%3E%3C/svg%3E") repeat-x 0 0/60px 34px}
 body.editing .decor,body.editing .fdecor{pointer-events:auto;cursor:grab}
@@ -272,7 +364,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 <main class="case">
   <button class="win" id="win" aria-label="Window">
     <span class="sky"></span><span class="stars"></span><span class="orb"></span><span class="grey"></span>
-    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="shoot"></span><span class="city"></span>
     <span class="wx"></span><span class="flash"></span>
   </button>
   <h1 class="sign" id="sign">Shelf Life</h1>
@@ -406,15 +498,15 @@ const SAMPLES = [
  ["The Book Thief","Markus Zusak","9780375842207",552,2005,4,"read",["World War II","Death","The power of words"]]
 ];
 
-let books = [], view = "spine", openId = null, arr = [], found = [], decor = [], wood = "oak", editing = false, sel = null, libName = "Shelf Life";
+let books = [], view = "spine", openId = null, arr = [], found = [], decor = [], wood = "oak", room = "", editing = false, sel = null, libName = "Shelf Life";
 
 /* ---------- storage ---------- */
 function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; arr = Array.isArray(d.arr) ? d.arr : []; if(d.sort) $("#sort").value = d.sort; decor = (Array.isArray(d.decor) ? d.decor : []).filter(x => DECOR[x.type]); wood = WOODS[d.wood] ? d.wood : "oak"; if(d.name) libName = String(d.name).slice(0,40); return; } }catch(e){}
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; arr = Array.isArray(d.arr) ? d.arr : []; if(d.sort) $("#sort").value = d.sort; decor = (Array.isArray(d.decor) ? d.decor : []).filter(x => DECOR[x.type]); wood = WOODS[d.wood] ? d.wood : "oak"; if(d.name) libName = String(d.name).slice(0,40); room = d.room==="night" ? "night" : ""; return; } }catch(e){}
   books = SAMPLES.map(([title,author,isbn,pages,year,myRating,shelf,themes],i)=>({id:"s"+i,title,author,isbn,pages,year,myRating,avgRating:0,shelf,themes,notes:"",dateAdded:"",dateRead:"",cover:"",color:"",sample:true,themesTried:true}));
 }
 let saveT;
-function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view,arr,decor,wood,name:libName,sort:$("#sort").value})); }catch(e){} }, 250); }
+function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view,arr,decor,wood,room,name:libName,sort:$("#sort").value})); }catch(e){} }, 250); }
 
 /* ---------- helpers ---------- */
 function hash(s){ let h = 2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h,16777619); } return h>>>0; }
@@ -479,7 +571,7 @@ function render(){
   const small = matchMedia("(max-width:640px)").matches;
   const cls = "shelf";
   shelf.innerHTML = rows.map(row => `<div class="${cls}">` + (row.length ? "" : `<div class="hint">Drag a book here to start a new shelf</div>`) + row.map(b=>{
-    if(b.type) return `<div class="slot d"><button class="decor${b.flip?" flip":""}${sel===b.id?" sel":""}" data-id="${b.id}" aria-label="${DECOR[b.type][0]}" style="height:${decorH(b)}px">${decorSvg(b.type)}</button></div>`;
+    if(b.type) return `<div class="slot d"><button class="decor${b.flip?" flip":""}${sel===b.id?" sel":""}${decorState(b)}" data-id="${b.id}" aria-label="${DECOR[b.type][0]}" style="height:${decorH(b)}px">${decorSvg(b.type)}</button></div>`;
     const label = `${esc(b.title)} by ${esc(b.author)}`;
     if((b.face||view)==="cover") return `<div class="slot f"><button class="face" data-id="${esc(b.id)}" aria-label="${label}">${coverHtml(b)}</button></div>`;
     const h = hash(b.title), c = colorOf(b);
@@ -546,7 +638,14 @@ function readColors(url){
     img.src = url;
   });
 }
-$("#shelf").addEventListener("click", e => { if(justDragged) return; const el = e.target.closest("[data-id]"); if(!el) return; if(el.classList.contains("decor")) selectDecor(el.dataset.id); else openBook(el.dataset.id, el); });
+$("#shelf").addEventListener("click", e => {
+  if(justDragged) return;
+  const f = e.target.closest(".fdecor");
+  if(f){ if(!editing) poke(f.dataset.fid, f); return; }   // while customising, tapping selects it instead (see the decor drag code)
+  const el = e.target.closest("[data-id]"); if(!el) return;
+  if(el.classList.contains("decor")) editing ? selectDecor(el.dataset.id) : poke(el.dataset.id, el);
+  else openBook(el.dataset.id, el);
+});
 ["fShelf","sort"].forEach(id => $("#"+id).addEventListener("input", () => { save(); render(); }));
 
 /* ---------- click and hold to rearrange ---------- */
@@ -943,29 +1042,59 @@ const WOODS = {
   pine:["Pine","#dcb67a","#b08a4f","#6b5230","#4a3a22"],
   ebony:["Ebony","#3d3835","#211d1b","#0e0c0b","#161312"],
   white:["Painted white","#f1ede4","#cfc8ba","#a39c90","#ddd7cb"],
-  drift:["Driftwood","#a39a8c","#756d61","#3f3a33","#2b2824"]
+  drift:["Driftwood","#a39a8c","#756d61","#3f3a33","#2b2824"],
+  starlit:["Starlit ebony","#2c3150","#1b1f38","#0d0f1f","#111428"]
 };
 // name, drawing width, drawing height, relative height on the shelf, drawing
 const DECOR = {
   plant:["Pot plant",60,80,1,'<g fill="#3f7d4e"><ellipse cx="30" cy="30" rx="7" ry="20"/><ellipse cx="18" cy="36" rx="6" ry="16" transform="rotate(-28 18 36)"/><ellipse cx="42" cy="36" rx="6" ry="16" transform="rotate(28 42 36)"/></g><g fill="#5fa06a"><ellipse cx="24" cy="32" rx="4" ry="14" transform="rotate(-12 24 32)"/><ellipse cx="36" cy="32" rx="4" ry="14" transform="rotate(12 36 32)"/></g><path d="M16 52h28l-4 28H20z" fill="#b5653a"/><rect x="14" y="48" width="32" height="7" rx="2" fill="#c9774a"/>'],
   cactus:["Cactus",50,70,.8,'<rect x="19" y="10" width="12" height="38" rx="6" fill="#4f8f5b"/><path d="M19 32h-5a4 4 0 0 1-4-4v-6M31 36h5a4 4 0 0 0 4-4v-8" stroke="#4f8f5b" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="25" cy="10" r="3.5" fill="#e86a8a"/><path d="M12 46h26l-3 24H15z" fill="#d9c7a3"/>'],
   vase:["Flowers",44,80,.95,'<path d="M22 50V22M19 50l-7-24M25 50l7-26" stroke="#4f8f5b" stroke-width="2" fill="none"/><circle cx="22" cy="16" r="7" fill="#e9b949"/><circle cx="11" cy="22" r="6" fill="#e86a8a"/><circle cx="33" cy="20" r="6" fill="#f2efe6"/><path d="M14 48c-4 10-4 22 2 32h12c6-10 6-22 2-32z" fill="#5b7fa6"/>'],
-  catSit:["Sitting cat",62,80,.95,'<path d="M46 76c10 0 12-10 8-18" stroke="#2f2b2a" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M14 80c-4-22 2-40 16-40s20 18 16 40z" fill="#2f2b2a"/><circle cx="30" cy="30" r="14" fill="#2f2b2a"/><path d="M18 22l-2-14 11 8zM42 22l2-14-11 8z" fill="#2f2b2a"/><circle cx="25" cy="30" r="2.2" fill="#e9c94a"/><circle cx="35" cy="30" r="2.2" fill="#e9c94a"/>'],
-  catNap:["Sleeping cat",92,44,.5,'<path d="M80 30c8 4 4 12-8 11H50" stroke="#d98b3a" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="46" cy="28" rx="38" ry="16" fill="#d98b3a"/><path d="M50 13v8M60 13v8M70 15v7" stroke="#b56d22" stroke-width="3" stroke-linecap="round"/><circle cx="18" cy="26" r="13" fill="#d98b3a"/><path d="M8 18l1-11 8 6zM22 13l7-7 2 11z" fill="#d98b3a"/><path d="M11 27q3 3 6 0M20 27q3 3 6 0" stroke="#5a3210" stroke-width="1.5" fill="none"/>'],
-  owl:["Owl figure",50,64,.7,'<path d="M8 16l2-12 8 7zM42 16l-2-12-8 7z" fill="#8a6a4a"/><ellipse cx="25" cy="36" rx="20" ry="26" fill="#8a6a4a"/><ellipse cx="25" cy="46" rx="12" ry="14" fill="#d9c3a0"/><circle cx="17" cy="24" r="8" fill="#f4ecd8"/><circle cx="33" cy="24" r="8" fill="#f4ecd8"/><circle cx="17" cy="24" r="3.5" fill="#221"/><circle cx="33" cy="24" r="3.5" fill="#221"/><path d="M25 27l-3 6h6z" fill="#e0a030"/>'],
+  catSit:["Sitting cat",62,80,.95,'<path class="tail" d="M46 76c10 0 12-10 8-18" stroke="#2f2b2a" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M14 80c-4-22 2-40 16-40s20 18 16 40z" fill="#2f2b2a"/><circle cx="30" cy="30" r="14" fill="#2f2b2a"/><path d="M18 22l-2-14 11 8zM42 22l2-14-11 8z" fill="#2f2b2a"/><circle class="eye" cx="25" cy="30" r="2.2" fill="#e9c94a"/><circle class="eye" cx="35" cy="30" r="2.2" fill="#e9c94a"/>'],
+  catNap:["Sleeping cat",92,44,.5,'<path d="M80 30c8 4 4 12-8 11H50" stroke="#d98b3a" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="46" cy="28" rx="38" ry="16" fill="#d98b3a"/><path d="M50 13v8M60 13v8M70 15v7" stroke="#b56d22" stroke-width="3" stroke-linecap="round"/><circle cx="18" cy="26" r="13" fill="#d98b3a"/><path d="M8 18l1-11 8 6zM22 13l7-7 2 11z" fill="#d98b3a"/><path d="M11 27q3 3 6 0M20 27q3 3 6 0" stroke="#5a3210" stroke-width="1.5" fill="none"/><text class="zz" x="26" y="10" font-size="11" font-weight="700" fill="#f4ecdc" font-family="sans-serif">z</text>'],
+  owl:["Owl figure",50,64,.7,'<path d="M8 16l2-12 8 7zM42 16l-2-12-8 7z" fill="#8a6a4a"/><ellipse cx="25" cy="36" rx="20" ry="26" fill="#8a6a4a"/><ellipse cx="25" cy="46" rx="12" ry="14" fill="#d9c3a0"/><circle cx="17" cy="24" r="8" fill="#f4ecd8"/><circle cx="33" cy="24" r="8" fill="#f4ecd8"/><circle class="eye" cx="17" cy="24" r="3.5" fill="#221"/><circle class="eye" cx="33" cy="24" r="3.5" fill="#221"/><path d="M25 27l-3 6h6z" fill="#e0a030"/>'],
   gnome:["Gnome",44,70,.8,'<path d="M8 70c0-16 6-22 14-22s14 6 14 22z" fill="#3b6ea5"/><path d="M11 36c0 16 6 22 11 22s11-6 11-22z" fill="#f4f1ea"/><circle cx="22" cy="34" r="9" fill="#f0c9a0"/><circle cx="22" cy="37" r="3" fill="#e8a987"/><path d="M22 2l14 30H8z" fill="#c0392b"/>'],
   stack:["Book stack",80,50,.55,'<rect x="6" y="34" width="68" height="14" rx="2" fill="#7b2d26"/><rect x="12" y="20" width="60" height="14" rx="2" fill="#1f4e5f"/><rect x="8" y="8" width="58" height="12" rx="2" fill="#b08d57"/><path d="M14 41h20M20 27h18M14 14h16" stroke="#f3ead8" stroke-width="2" opacity=".7"/>'],
-  globe:["Globe",56,74,.9,'<path d="M18 74h20v-4h-8v-8h-4v8h-8z" fill="#b08d57"/><circle cx="28" cy="34" r="24" fill="#3f7fb0"/><path d="M16 22c6-6 14-2 12 4s-10 6-12 2zM30 36c6-2 12 2 10 8s-10 6-12 0z" fill="#6fae6a"/><path d="M7 22a24 24 0 0 0 32 36" stroke="#b08d57" stroke-width="3" fill="none"/>'],
+  globe:["Globe",56,74,.9,'<path d="M18 74h20v-4h-8v-8h-4v8h-8z" fill="#b08d57"/><circle cx="28" cy="34" r="24" fill="#3f7fb0"/><g class="sph"><circle cx="28" cy="34" r="24" fill="none"/><path d="M16 22c6-6 14-2 12 4s-10 6-12 2zM30 36c6-2 12 2 10 8s-10 6-12 0z" fill="#6fae6a"/></g><path d="M7 22a24 24 0 0 0 32 36" stroke="#b08d57" stroke-width="3" fill="none"/>'],
   hourglass:["Hourglass",40,64,.7,'<path d="M9 8h22c0 14-8 18-8 24s8 10 8 24H9c0-14 8-18 8-24S9 22 9 8z" fill="#e8f0f2" opacity=".85"/><path d="M13 56c1-8 5-10 7-12 2 2 6 4 7 12zM14 12h12c-1 6-4 9-6 11-2-2-5-5-6-11z" fill="#e2b65a"/><rect x="4" y="2" width="32" height="6" rx="2" fill="#8a5a2b"/><rect x="4" y="56" width="32" height="6" rx="2" fill="#8a5a2b"/>'],
-  lamp:["Reading lamp",60,80,1.05,'<path d="M34 34l14 30H16z" fill="#fde9a8" opacity=".22"/><ellipse cx="22" cy="76" rx="16" ry="4" fill="#2f2f33"/><path d="M22 76V40l18-18" stroke="#2f2f33" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M32 12l18 14-10 10-18-12z" fill="#e2b65a"/>'],
-  mug:["Mug of tea",50,56,.55,'<path d="M16 18c-3-5 3-7 0-12M26 18c-3-5 3-7 0-12" stroke="#fff" stroke-width="2" fill="none" opacity=".6" stroke-linecap="round"/><path d="M36 30h4a6 6 0 0 1 0 14h-4" stroke="#d9d3c7" stroke-width="4" fill="none"/><rect x="8" y="24" width="28" height="28" rx="5" fill="#d9d3c7"/>'],
+  lamp:["Reading lamp",60,80,1.05,'<path class="glow" d="M34 34l14 30H16z" fill="#fde9a8" opacity=".3"/><ellipse cx="22" cy="76" rx="16" ry="4" fill="#2f2f33"/><path d="M22 76V40l18-18" stroke="#2f2f33" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M32 12l18 14-10 10-18-12z" fill="#e2b65a"/>'],
+  mug:["Mug of tea",50,56,.55,'<path class="steam" d="M16 18c-3-5 3-7 0-12M26 18c-3-5 3-7 0-12" stroke="#fff" stroke-width="2" fill="none" opacity=".6" stroke-linecap="round"/><path d="M36 30h4a6 6 0 0 1 0 14h-4" stroke="#d9d3c7" stroke-width="4" fill="none"/><rect x="8" y="24" width="28" height="28" rx="5" fill="#d9d3c7"/>'],
   frame:["Picture",56,66,.8,'<rect x="4" y="4" width="48" height="58" rx="2" fill="#8a5a2b"/><rect x="10" y="10" width="36" height="46" fill="#cfe3ee"/><circle cx="36" cy="22" r="5" fill="#f6b23a"/><path d="M10 46l12-14 8 9 6-6 10 11v10H10z" fill="#6fae6a"/>'],
-  candle:["Candle",36,70,.8,'<path d="M6 62h24l-3 8H9z" fill="#b08d57"/><rect x="11" y="26" width="14" height="36" rx="2" fill="#f4ecd8"/><path d="M18 26v-5" stroke="#333" stroke-width="1.5"/><path d="M18 4c5 7 6 10 6 13a6 6 0 0 1-12 0c0-3 1-6 6-13z" fill="#f6b23a"/><path d="M18 11c2 3 3 5 3 6a3 3 0 0 1-6 0c0-1 1-3 3-6z" fill="#fde9a8"/>'],
-  lantern:["Lantern",40,66,.8,'<path d="M14 8a6 6 0 0 1 12 0" stroke="#2f2f33" stroke-width="2.5" fill="none"/><rect x="10" y="14" width="20" height="42" fill="#fde9a8" opacity=".9"/><circle cx="20" cy="38" r="6" fill="#f6b23a"/><path d="M10 14v42M20 14v42M30 14v42" stroke="#2f2f33" stroke-width="2.5"/><rect x="8" y="8" width="24" height="6" rx="2" fill="#2f2f33"/><rect x="6" y="56" width="28" height="8" rx="2" fill="#2f2f33"/>'],
+  candle:["Candle",36,70,.8,'<path d="M6 62h24l-3 8H9z" fill="#b08d57"/><rect x="11" y="26" width="14" height="36" rx="2" fill="#f4ecd8"/><path d="M18 26v-5" stroke="#333" stroke-width="1.5"/><g class="flame"><path d="M18 4c5 7 6 10 6 13a6 6 0 0 1-12 0c0-3 1-6 6-13z" fill="#f6b23a"/><path d="M18 11c2 3 3 5 3 6a3 3 0 0 1-6 0c0-1 1-3 3-6z" fill="#fde9a8"/></g>'],
+  lantern:["Lantern",40,66,.8,'<path d="M14 8a6 6 0 0 1 12 0" stroke="#2f2f33" stroke-width="2.5" fill="none"/><rect class="lit" x="10" y="14" width="20" height="42" fill="#fde9a8" opacity=".9"/><circle class="flame" cx="20" cy="38" r="6" fill="#f6b23a"/><path d="M10 14v42M20 14v42M30 14v42" stroke="#2f2f33" stroke-width="2.5"/><rect x="8" y="8" width="24" height="6" rx="2" fill="#2f2f33"/><rect x="6" y="56" width="28" height="8" rx="2" fill="#2f2f33"/>'],
+  starlamp:["Starlight lamp",50,86,1.05,'<g class="glow"><circle cx="25" cy="28" r="24" fill="#b9c6ff" opacity=".12"/><circle cx="25" cy="28" r="17" fill="#cdd6ff" opacity=".18"/></g><path d="M12 84h26l-4-6H16z" fill="#8d96bf"/><path d="M25 78V43" stroke="#aab3d9" stroke-width="2.6"/><path d="M17 44q8 5 16 0" stroke="#aab3d9" stroke-width="2.2" fill="none"/><circle class="lit" cx="25" cy="28" r="13" fill="#e4e9ff"/><path class="glow" d="M25 19L27.4 25.6L34 28L27.4 30.4L25 37L22.6 30.4L16 28L22.6 25.6Z" fill="#fff"/><circle cx="25" cy="28" r="13" fill="none" stroke="#8d96bf" stroke-width="1.5"/><path d="M20 13h10l-2.5 3h-5z" fill="#8d96bf"/>'],
+  faejar:["Faelights jar",44,66,0.75,'<g class="glow"><circle cx="22" cy="44" r="19" fill="#b9c6ff" opacity=".16"/></g><path d="M10 17h24v4c4 3 5 8 5 14v21a6 6 0 0 1-6 6H11a6 6 0 0 1-6-6V35c0-6 1-11 5-14z" fill="#c9d3ff" fill-opacity=".13" stroke="#aab3d9" stroke-width="1.6"/><rect x="12" y="8" width="20" height="10" rx="2" fill="#6e5236"/><circle class="orb1 lit" cx="16" cy="44" r="3.4" fill="#eef3ff"/><circle class="orb2 lit" cx="27" cy="36" r="2.8" fill="#d3dcff"/><circle class="orb3 lit" cx="23" cy="53" r="2.4" fill="#fff"/><path d="M10 27q-2 10 0 26" stroke="#fff" stroke-opacity=".45" stroke-width="1.5" fill="none"/>'],
+  moon:["Moon on a stand",50,76,0.85,'<path d="M13 74h24l-3-5H16z" fill="#8d96bf"/><path d="M25 69V42" stroke="#aab3d9" stroke-width="2.4"/><path d="M14 49q11 7 22 0" stroke="#aab3d9" stroke-width="2" fill="none"/><circle class="mglow" cx="25" cy="26" r="22" fill="#dfe6ff" opacity=".2"/><circle cx="25" cy="26" r="15" fill="#272b4d"/><path class="ph0" d="M25 11A15 15 0 0 1 25 41A9 15 0 0 0 25 11Z" fill="#eef1ff"/><path class="ph1" d="M25 11A15 15 0 0 1 25 41Z" fill="#eef1ff"/><path class="ph2" d="M25 11A15 15 0 0 1 25 41A9 15 0 0 1 25 11Z" fill="#eef1ff"/><circle class="ph3" cx="25" cy="26" r="15" fill="#eef1ff"/><circle cx="25" cy="26" r="15" fill="none" stroke="#8d96bf" stroke-width="1"/>'],
+  celestial:["Star globe",56,78,0.9,'<path d="M16 76h24l-3-5H19z" fill="#8d96bf"/><path d="M28 71v-14" stroke="#aab3d9" stroke-width="3"/><circle cx="28" cy="34" r="23" fill="#1c2150"/><g class="sph"><circle cx="28" cy="34" r="23" fill="none"/><path d="M13 27l8-7 9 4 8-6M17 45l8 3 6-7 9 3" stroke="#aeb8ee" stroke-width=".8" fill="none"/><g fill="#fff"><circle cx="13" cy="27" r="1.3"/><circle cx="21" cy="20" r="1.1"/><circle cx="30" cy="24" r="1.4"/><circle cx="38" cy="18" r="1.1"/><circle cx="17" cy="45" r="1.1"/><circle cx="25" cy="48" r="1.3"/><circle cx="31" cy="41" r="1"/><circle cx="40" cy="44" r="1.3"/><circle cx="44" cy="30" r=".8"/><circle cx="10" cy="37" r=".8"/><circle cx="35" cy="53" r=".7"/></g></g><circle cx="28" cy="34" r="23" fill="none" stroke="#5b6390" stroke-width="1"/><path d="M4 34a24 24 0 0 0 48 0" stroke="#aab3d9" stroke-width="2.6" fill="none"/>'],
+  candelabra:["Candelabra",70,82,1,'<g class="glow"><circle cx="14" cy="15" r="9" fill="#cdd8ff" opacity=".2"/><circle cx="35" cy="7" r="10" fill="#cdd8ff" opacity=".2"/><circle cx="56" cy="15" r="9" fill="#cdd8ff" opacity=".2"/></g><path d="M22 81h26l-3-5H25z" fill="#8d96bf"/><path d="M35 76V40M14 40q0 12 21 12q21 0 21-12" stroke="#aab3d9" stroke-width="3" fill="none"/><g fill="#8d96bf"><rect x="9" y="36" width="10" height="5" rx="1"/><rect x="30" y="36" width="10" height="5" rx="1"/><rect x="51" y="36" width="10" height="5" rx="1"/></g><g fill="#eef0f8"><rect x="11" y="20" width="6" height="16"/><rect x="32" y="12" width="6" height="24"/><rect x="53" y="20" width="6" height="16"/></g><g fill="#d6e2ff"><path class="flame" d="M14 9c3 4 3.5 6 3.5 7.5a3.5 3.5 0 0 1-7 0c0-1.5.5-3.5 3.5-7.5z"/><path class="flame" d="M35 1c3 4 3.5 6 3.5 7.5a3.5 3.5 0 0 1-7 0c0-1.5.5-3.5 3.5-7.5z"/><path class="flame" d="M56 9c3 4 3.5 6 3.5 7.5a3.5 3.5 0 0 1-7 0c0-1.5.5-3.5 3.5-7.5z"/></g>'],
+  emblem:["Mountain and stars",64,60,0.7,'<path d="M6 58h52l-4-6H10z" fill="#5b6390"/><path d="M11 52V31a21 21 0 0 1 42 0v21z" fill="#1b1f3a" stroke="#aab3d9" stroke-width="2"/><path d="M16 50l10-14 5 6 7-12 10 20z" fill="#aab3d9"/><path d="M38 30l3 5h-6z" fill="#eef1ff"/><g fill="#eef1ff"><path class="tw" d="M25 17.8L25.896 20.104L28.2 21L25.896 21.896L25 24.2L24.104 21.896L21.8 21L24.104 20.104Z"/><path class="tw" d="M32 11L33.12 13.879999999999999L36 15L33.12 16.12L32 19L30.88 16.12L28 15L30.88 13.879999999999999Z"/><path class="tw" d="M39 17.8L39.896 20.104L42.2 21L39.896 21.896L39 24.2L38.104 21.896L35.8 21L38.104 20.104Z"/></g>'],
+  wings:["Winged bookend",52,82,1,'<g class="wing"><path d="M44 74L42 8Q28 14 10 30Q17 32 19 38Q10 41 6 49Q15 51 17 57Q10 62 11 70Z" fill="#2b2240"/><path d="M42 8L10 30M42 22L6 49M43 38L11 70" stroke="#4d3f6e" stroke-width="1.5"/><path d="M44 74L42 8" stroke="#5f5190" stroke-width="3"/><path d="M42 9l-1-7 4 6z" fill="#cfd6f3"/></g><rect x="6" y="73" width="42" height="8" rx="2" fill="#23263f"/><path d="M6 75h42" stroke="#8d96bf"/>'],
+  easel:["Starry painting",60,86,1.05,'<path d="M14 85L26 8M46 85L34 8M30 85V58" stroke="#5a4130" stroke-width="3" stroke-linecap="round"/><rect x="9" y="56" width="42" height="4" rx="1" fill="#6b4c36"/><rect x="9" y="14" width="42" height="42" fill="#f1ece0"/><rect x="12" y="17" width="36" height="36" fill="#1a1d48"/><path d="M12 53V43l8-8 6 6 8-11 14 13v10z" fill="#3b3f73"/><path d="M30 30l4 4h-6z" fill="#dfe5ff"/><circle cx="41" cy="24" r="3.5" fill="#eef1ff"/><g fill="#fff"><circle cx="17" cy="22" r=".8"/><circle cx="24" cy="27" r=".7"/><circle cx="31" cy="20" r=".9"/><circle cx="45" cy="33" r=".6"/><circle cx="20" cy="33" r=".6"/></g><path class="shoot2" d="M17 21l7 3.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>'],
+  crown:["Starlit crown",60,44,0.55,'<path d="M4 40q26 8 52 0l-4-10q-22 6-44 0z" fill="#3d2a6b"/><path d="M12 31l-2-18 9 8 5-14 6 12 6-12 5 14 9-8-2 18z" fill="#14162b" stroke="#aab3d9" stroke-width="1.4" stroke-linejoin="round"/><rect x="12" y="27" width="36" height="4" fill="#aab3d9"/><g fill="#eef1ff"><path class="tw" d="M10 9L10.84 11.16L13 12L10.84 12.84L10 15L9.16 12.84L7 12L9.16 11.16Z"/><path class="tw" d="M24 2.6L24.952 5.048L27.4 6L24.952 6.952L24 9.4L23.048 6.952L20.6 6L23.048 5.048Z"/><path class="tw" d="M36 2.6L36.952 5.048L39.4 6L36.952 6.952L36 9.4L35.048 6.952L32.6 6L35.048 5.048Z"/><path class="tw" d="M50 9L50.84 11.16L53 12L50.84 12.84L50 15L49.16 12.84L47 12L49.16 11.16Z"/></g>'],
   lights:["Fairy lights",60,34,1,'<path d="M0 3q30 24 60 0" stroke="#999" fill="none" stroke-width="1.3"/><circle cx="14" cy="13" r="4" fill="#fde9a8"/><circle cx="30" cy="17" r="4" fill="#f6b23a"/><circle cx="46" cy="13" r="4" fill="#fde9a8"/>']
 };
 // each piece: type, shelf number from the top, position across the shelf, size, flipped
+const NIGHT_DECOR = ["starlamp","faejar","moon","celestial","candelabra","emblem","wings","easel","crown"];
+// what a tap does: toggle on and off, step through looks, or play a short animation
+const FX = {lamp:["toggle"], candle:["toggle"], lantern:["toggle"], lights:["toggle"], mug:["toggle"], starlamp:["toggle"], faejar:["toggle"], candelabra:["toggle"],
+  moon:["cycle","",4], catSit:["play","cat"], catNap:["play","nap"], owl:["play","owl"], globe:["play","spin"], celestial:["play","spin"], hourglass:["play","flip"],
+  gnome:["play","hop"], stack:["play","hop"], frame:["play","swing"], emblem:["play","tw"], crown:["play","tw"], wings:["play","flap"], easel:["play","shoot"]};
+function decorState(d){ return (d.off ? " off" : "") + (d.v ? " v"+d.v : ""); }
+function poke(id, el){
+  const d = decor.find(x => x.id===id); if(!d) return;
+  const fx = FX[d.type] || ["play","sway"];
+  if(fx[0]==="toggle"){ d.off = !d.off; el.classList.toggle("off", d.off); save(); }
+  if(fx[0]==="cycle"){ el.classList.remove("v"+(d.v||0)); d.v = ((d.v||0)+1) % fx[2]; if(d.v) el.classList.add("v"+d.v); save(); }
+  const a = fx[1]; if(!a) return;
+  el.classList.remove("a-"+a); void el.offsetWidth; el.classList.add("a-"+a);
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("a-"+a), 2000);
+}
+const ROOMS = {"":"Classic study", night:"Night Court"};
+function applyRoom(){ document.body.dataset.room = room; drawWindow(); }
 const THEMES = [
+  {name:"The Night Court", desc:"Starlit ebony, a window over the city of starlight, silver lamps, faelights and a crown", wood:"starlit", room:"night",
+    icon:"radial-gradient(circle at 68% 32%,#eef1ff 0 3px,transparent 4px),radial-gradient(circle at 30% 60%,#fff 0 1px,transparent 2px),linear-gradient(180deg,#232860,#0b0c1f)",
+    items:[["starlamp",0,.08,"m"],["crown",0,.5,"s"],["moon",0,.9,"m"],["faejar",1,.12,"m"],["candelabra",1,.86,"m"],["celestial",2,.1,"m"],["wings",2,.9,"m",1]]},
   {name:"Cosy nook", desc:"Walnut, fairy lights, a sleeping cat and a candle", wood:"walnut", items:[["lights",0],["catNap",0,.74,"m"],["candle",0,.14,"s"],["plant",1,.86,"m"],["mug",1,.16,"m"]]},
   {name:"Botanical", desc:"Pine with plants and flowers on every shelf", wood:"pine", items:[["plant",0,.1,"l"],["vase",0,.88,"m"],["cactus",1,.5,"s"],["plant",1,.9,"s",1]]},
   {name:"Dark academia", desc:"Ebony with a globe, an hourglass and an owl", wood:"ebony", items:[["globe",0,.86,"m"],["hourglass",0,.12,"m"],["stack",0,.5,"s"],["candle",1,.84,"m"],["owl",1,.14,"m"]]},
@@ -994,7 +1123,7 @@ function placeFront(){
   const m = dims();
   decor.filter(d => d.mode!=="inline").forEach(d => {
     const el = document.createElement("div");
-    el.className = "fdecor" + (d.type==="lights" ? " lights" : "") + (d.flip ? " flip" : "") + (sel===d.id ? " sel" : "");
+    el.className = "fdecor" + (d.type==="lights" ? " lights" : "") + (d.flip ? " flip" : "") + (sel===d.id ? " sel" : "") + decorState(d);
     el.dataset.fid = d.id;
     if(d.type!=="lights") el.innerHTML = decorSvg(d.type);
     posFront(el, d, m); shelfEl.append(el);
@@ -1057,7 +1186,7 @@ function addDecor(type){
 }
 function applyTheme(i){
   const t = THEMES[i];
-  wood = t.wood; applyWood();
+  wood = t.wood; applyWood(); room = t.room || ""; applyRoom();
   decor = t.items.map(([type, line, x, size, flip], n) => ({id:"d_t"+i+"_"+n, type, mode:"front", line, x:x||.5, size:size||"m", flip:!!flip}));
   sel = null; save(); drawDecorEdit(); render();
 }
@@ -1066,14 +1195,19 @@ function drawCustom(){
   $("#ctabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t===ctab));
   const el = $("#cbody");
   if(ctab==="wood") el.innerHTML = `<div class="swatches">${Object.entries(WOODS).map(([k,w]) => `<button class="sw" data-wood="${k}" aria-pressed="${wood===k}"><i style="background:linear-gradient(180deg,${w[1]},${w[2]})"></i>${w[0]}</button>`).join("")}</div>`;
-  if(ctab==="decor") el.innerHTML = `<p>Tap a piece to add it, then drag it where you want it. Tap a piece on the shelf to resize, flip or remove it.</p><div class="dgrid">${Object.entries(DECOR).map(([k,d]) => `<button data-decor="${k}">${decorSvg(k)}${d[0]}</button>`).join("")}</div>`;
-  if(ctab==="themes") el.innerHTML = `<p>A theme sets the wood and arranges a few pieces for you. It replaces the decor you have now.</p><div class="tlist">${THEMES.map((t,i) => { const w = WOODS[t.wood]; return `<button data-theme="${i}"><i style="background:linear-gradient(180deg,${w[1]},${w[2]})"></i><div><strong>${t.name}</strong><span>${themeArmed===i ? "Tap again to replace your current decor" : t.desc}</span></div></button>`; }).join("")}</div>`;
+  if(ctab==="decor"){
+    const grid = keys => `<div class="dgrid">${keys.map(k => `<button data-decor="${k}">${decorSvg(k)}${DECOR[k][0]}</button>`).join("")}</div>`;
+    const nightG = `<h4 class="dhead">Night Court</h4>` + grid(NIGHT_DECOR), dayG = `<h4 class="dhead">Everyday</h4>` + grid(Object.keys(DECOR).filter(k => !NIGHT_DECOR.includes(k)));
+    el.innerHTML = `<p>Tap a piece to add it, then drag it where you want it. Tap a piece on the shelf to resize, flip or remove it. When you are done, tap a piece to switch it on or off or watch it move.</p>` + (room==="night" ? nightG + dayG : dayG + nightG);
+  }
+  if(ctab==="themes") el.innerHTML = `<div class="roomrow"><span>Room</span><div class="seg">${Object.entries(ROOMS).map(([k,n]) => `<button data-room="${k}" aria-pressed="${room===k}">${n}</button>`).join("")}</div><span>Changes the wallpaper, window and bookcase, and keeps your decor.</span></div><p>A theme sets the room and the wood and arranges a few pieces for you. It replaces the decor you have now.</p><div class="tlist">${THEMES.map((t,i) => { const w = WOODS[t.wood]; return `<button data-theme="${i}"><i style="background:${t.icon || `linear-gradient(180deg,${w[1]},${w[2]})`}"></i><div><strong>${t.name}</strong><span>${themeArmed===i ? "Tap again to replace your current decor" : t.desc}</span></div></button>`; }).join("")}</div>`;
 }
 $("#ctabs").onclick = e => { const t = e.target.dataset.t; if(!t) return; ctab = t; themeArmed = -1; drawCustom(); };
 $("#cbody").onclick = e => {
   const t = e.target.closest("button"); if(!t) return;
   if(t.dataset.wood){ wood = t.dataset.wood; applyWood(); save(); drawCustom(); }
   if(t.dataset.decor) addDecor(t.dataset.decor);
+  if(t.dataset.room!==undefined){ room = t.dataset.room; applyRoom(); save(); drawCustom(); render(); }
   if(t.dataset.theme!==undefined){
     const i = +t.dataset.theme;
     if(decor.length && themeArmed!==i){ themeArmed = i; drawCustom(); return; }
@@ -1111,13 +1245,14 @@ function drawWindow(now){
   else f = Math.min(1, Math.max(0, (m-sr)/(ss-sr)));
   const el = $("#win"), st = el.style;
   el.className = "win " + ph + (rain?" rain":"") + (snow?" snow":"") + (fog?" fog":"") + (storm?" storm":"");
-  st.setProperty("--sky", {day:"linear-gradient(180deg,#3f86d1,#a9d4f5)", dawn:"linear-gradient(180deg,#34406e,#e58f62 32%,#fbd3a0 60%)",
+  st.setProperty("--sky", room==="night" ? {day:"linear-gradient(180deg,#5a7cc4,#b8c8ec)", dawn:"linear-gradient(180deg,#1c1a4d,#7a4a8c 40%,#eaa07a 80%)",
+    dusk:"linear-gradient(180deg,#14123f,#5b3a86 40%,#d77d7a 82%)", night:"linear-gradient(180deg,#03041a,#121446 55%,#2b2366)"}[ph] : {day:"linear-gradient(180deg,#3f86d1,#a9d4f5)", dawn:"linear-gradient(180deg,#34406e,#e58f62 32%,#fbd3a0 60%)",
     dusk:"linear-gradient(180deg,#352a5c,#c9563f 32%,#f6b26b 60%)", night:"linear-gradient(180deg,#070b1d,#18224a)"}[ph]);
   st.setProperty("--orbx", (14 + f*72)+"%"); st.setProperty("--orby", (33 - Math.sin(Math.PI*f)*24)+"%");
   st.setProperty("--grey", (rain||snow ? Math.max(cover,.75) : cover)*.8); st.setProperty("--cl", Math.min(1, cover*1.3 + (code===1 ? .3 : 0)));
   // the room takes its light from the window
   const dim = 1 - Math.min(.7, cover*.6 + (rain||snow||fog ? .2 : 0)), root = document.documentElement.style;
-  const glow = {day:[170,205,235,.17], dawn:[245,170,100,.2], dusk:[230,110,80,.2], night:[70,90,160,.1]}[ph];
+  const glow = room==="night" ? {day:[150,175,240,.15], dawn:[200,140,200,.18], dusk:[170,110,200,.2], night:[110,100,230,.16]}[ph] : {day:[170,205,235,.17], dawn:[245,170,100,.2], dusk:[230,110,80,.2], night:[70,90,160,.1]}[ph];
   root.setProperty("--glow", `rgba(${glow[0]},${glow[1]},${glow[2]},${(glow[3]*dim).toFixed(3)})`);
   root.setProperty("--wall", {day:"#1e2c36", dawn:"#1d2630", dusk:"#1e2530", night:"#121a20"}[ph]);
   const part = {day:"daytime", dawn:"sunrise", dusk:"sunset", night:"night"}[ph];
@@ -1213,7 +1348,7 @@ function show(){
 }
 addEventListener("hashchange", show);
 
-load(); initPlates(); applyWood(); drawSign(); initWindow(); show();
+load(); initPlates(); applyWood(); applyRoom(); drawSign(); initWindow(); show();
 // measure the spine lettering again once the real typeface has arrived
 if(document.fonts && document.fonts.load) document.fonts.load('500 13px "EB Garamond"').then(() => { if(!drag && !openId) render(); }).catch(()=>{});
 addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 150); });
