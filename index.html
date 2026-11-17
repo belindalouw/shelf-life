@@ -159,35 +159,42 @@ body.editing nav.tabs a[aria-current=page]{color:var(--ink-dim)}
 @keyframes flash{0%,91%,100%{opacity:0}92%{opacity:.8}94%{opacity:.1}95%{opacity:.55}97%{opacity:0}}
 @media (min-width:1300px){.win{right:-36px}}
 .win .city,.win .shoot{display:none}
-.win .city{inset:0;background:url(velaris-night.webp) 50% 0/cover no-repeat;z-index:3}
+.win .city{inset:0;background:url(nightcourt/velaris-night.webp) 50% 0/cover no-repeat;z-index:3}
 .win .shoot{top:9%;left:62%;width:54px;height:1.6px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0));rotate:-24deg;opacity:0;animation:shoot 13s linear infinite 4s}
 @keyframes shoot{0%,90%{opacity:0;translate:0 0}91%{opacity:1}96%{opacity:0;translate:-110px 48px}100%{opacity:0;translate:-110px 48px}}
 @keyframes twinkle{to{opacity:.7}}
 
 /* ---------- the Night Court room ---------- */
-body[data-room=night]{--wall:#0b0d1f;--wall-2:#151935;--brass:#c3cbff;
-  background:radial-gradient(760px 560px at 100% 0,var(--glow,transparent),transparent 70%) no-repeat,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'%3E%3Cpath d='M44 0L88 44L44 88L0 44Z' fill='none' stroke='%23aab4e8' stroke-opacity='.11'/%3E%3Cpath d='M44 6L82 44L44 82L6 44Z' fill='none' stroke='%23aab4e8' stroke-opacity='.05'/%3E%3Cg fill='%23c9d1f5' fill-opacity='.2'%3E%3Cpath d='M34 53l7-10 3 4 5-8 8 14z'/%3E%3Cpath d='M39 31.6L39.672 33.328L41.4 34L39.672 34.672L39 36.4L38.328 34.672L36.6 34L38.328 33.328Z'/%3E%3Cpath d='M45 27L45.84 29.16L48 30L45.84 30.84L45 33L44.16 30.84L42 30L44.16 29.16Z'/%3E%3Cpath d='M51 31.6L51.672 33.328L53.4 34L51.672 34.672L51 36.4L50.328 34.672L48.6 34L50.328 33.328Z'/%3E%3C/g%3E%3Cg fill='%23dfe5ff' fill-opacity='.3'%3E%3Cpath d='M0 -4L1.12 -1.12L4 0L1.12 1.12L0 4L-1.12 1.12L-4 0L-1.12 -1.12Z'/%3E%3Cpath d='M88 -4L89.12 -1.12L92 0L89.12 1.12L88 4L86.88 1.12L84 0L86.88 -1.12Z'/%3E%3Cpath d='M0 84L1.12 86.88L4 88L1.12 89.12L0 92L-1.12 89.12L-4 88L-1.12 86.88Z'/%3E%3Cpath d='M88 84L89.12 86.88L92 88L89.12 89.12L88 92L86.88 89.12L84 88L86.88 86.88Z'/%3E%3C/g%3E%3Cg fill='%23fff' fill-opacity='.28'%3E%3Ccircle cx='18' cy='13' r='.8'/%3E%3Ccircle cx='70' cy='22' r='.7'/%3E%3Ccircle cx='13' cy='64' r='.8'/%3E%3Ccircle cx='66' cy='73' r='.6'/%3E%3Ccircle cx='27' cy='40' r='.5'/%3E%3C/g%3E%3C/svg%3E") 0 0/88px 88px,linear-gradient(180deg,#121539,#080918 70%)}
-body[data-room=night] nav.tabs{background:#0a0c1d;border-top-color:rgba(195,203,255,.18)}
-body[data-room=night] #custom{background:#12152e;border-color:rgba(195,203,255,.22)}
-body[data-room=night] .case{margin-top:140px}
-body[data-room=night] .case-inner{border:18px solid #1b1f38;border-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232a2f4f'/%3E%3Cstop offset='1' stop-color='%23151830'/%3E%3C/linearGradient%3E%3ClinearGradient id='s' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23eef1ff'/%3E%3Cstop offset='.5' stop-color='%238d96bf'/%3E%3Cstop offset='1' stop-color='%23d5dbf7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='96' height='96' fill='url(%23w)'/%3E%3Crect x='3.5' y='3.5' width='89' height='89' fill='none' stroke='url(%23s)' stroke-width='1.6'/%3E%3Crect x='21.5' y='21.5' width='53' height='53' fill='none' stroke='url(%23s)' stroke-width='1.1'/%3E%3Ccircle cx='13' cy='13' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M13 7.5L14.6 11.4L18.5 13L14.6 14.6L13 18.5L11.4 14.6L7.5 13L11.4 11.4Z' fill='%23dfe5ff'/%3E%3Ccircle cx='83' cy='13' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M83 7.5L84.6 11.4L88.5 13L84.6 14.6L83 18.5L81.4 14.6L77.5 13L81.4 11.4Z' fill='%23dfe5ff'/%3E%3Ccircle cx='13' cy='83' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M13 77.5L14.6 81.4L18.5 83L14.6 84.6L13 88.5L11.4 84.6L7.5 83L11.4 81.4Z' fill='%23dfe5ff'/%3E%3Ccircle cx='83' cy='83' r='7' fill='%2314172b' stroke='url(%23s)' stroke-width='1.4'/%3E%3Cpath d='M83 77.5L84.6 81.4L88.5 83L84.6 84.6L83 88.5L81.4 84.6L77.5 83L81.4 81.4Z' fill='%23dfe5ff'/%3E%3C/svg%3E") 26/18px stretch;box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 40px rgba(120,130,230,.12);
-  background:radial-gradient(ellipse 70% 40% at 50% 0,rgba(130,140,240,.13),transparent 70%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70'%3E%3Cg fill='%23dfe5ff'%3E%3Ccircle cx='9' cy='12' r='.7' fill-opacity='.35'/%3E%3Ccircle cx='47' cy='30' r='.6' fill-opacity='.25'/%3E%3Ccircle cx='28' cy='58' r='.8' fill-opacity='.3'/%3E%3Ccircle cx='63' cy='61' r='.5' fill-opacity='.2'/%3E%3C/g%3E%3C/svg%3E") 0 0/70px 70px,linear-gradient(90deg,var(--oak-deep),var(--back) 6%,var(--back) 94%,var(--oak-deep))}
-body[data-room=night] .case-inner::before{content:"";position:absolute;bottom:100%;margin-bottom:17px;left:calc(64% - 60px);width:120px;height:36px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 36'%3E%3Cpath d='M0 36Q9 36 15 29Q31 9 60 5Q89 9 105 29Q111 36 120 36Z' fill='%231b1f38' stroke='%23aab3d9' stroke-width='1.4'/%3E%3Cpath d='M10 34Q30 14 60 10Q90 14 110 34' fill='none' stroke='%23aab3d9' stroke-opacity='.45'/%3E%3Cpath d='M46 32l8-11 3 4 6-9 10 16z' fill='%23aab3d9'/%3E%3Cpath d='M60 16l2 3h-4z' fill='%23eef1ff'/%3E%3Cg fill='%23eef1ff'%3E%3Cpath d='M53 12L53.84 14.16L56 15L53.84 15.84L53 18L52.16 15.84L50 15L52.16 14.16Z'/%3E%3Cpath d='M60 6.2L61.064 8.936L63.8 10L61.064 11.064L60 13.8L58.936 11.064L56.2 10L58.936 8.936Z'/%3E%3Cpath d='M67 12L67.84 14.16L70 15L67.84 15.84L67 18L66.16 15.84L64 15L66.16 14.16Z'/%3E%3C/g%3E%3C/svg%3E") 0 0/100% 100% no-repeat;filter:drop-shadow(0 -2px 6px rgba(150,165,255,.25));pointer-events:none}
-@media (min-width:700px){body[data-room=night] .case-inner::before{left:calc(50% - 60px)}}
-body[data-room=night] .case-inner::after{content:"";position:absolute;left:-18px;right:-18px;top:100%;margin-top:18px;height:18px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='18'%3E%3Crect width='36' height='18' fill='%2314172b'/%3E%3Cpath d='M3 18V10a15 9 0 0 1 30 0v8' fill='%230c0e1e' stroke='%238d96bf' stroke-width='1.2'/%3E%3Ccircle cx='18' cy='5' r='1' fill='%23dfe5ff'/%3E%3C/svg%3E") 0 0/36px 18px repeat-x;border-top:1px solid #8d96bf;box-shadow:0 8px 14px rgba(0,0,0,.45)}
-body[data-room=night] .shelf{background:repeating-linear-gradient(180deg,transparent 0,transparent var(--row),#d5dbf7 var(--row),#d5dbf7 calc(var(--row) + 1px),var(--oak) calc(var(--row) + 1px),var(--oak-dark) calc(var(--row) + var(--board) - 2px),#8d96bf calc(var(--row) + var(--board) - 2px),#8d96bf calc(var(--row) + var(--board) - 1px),rgba(0,0,0,.55) calc(var(--row) + var(--board)),rgba(120,135,240,.06) calc(var(--row) + var(--board) + 3px),transparent calc(var(--row) + var(--gap)))}
-body[data-room=night] .sign{background:linear-gradient(180deg,#1d2142,#0f1126);color:#e6eaff;border-color:#8d96bf;outline-color:rgba(0,0,0,.6);font-style:italic;text-shadow:0 0 10px rgba(170,185,255,.7);box-shadow:0 0 18px rgba(130,145,255,.25),3px 0 6px rgba(0,0,0,.4)}
-body[data-room=night] .ddbtn{background:linear-gradient(180deg,#e3e8fb,#9aa3cc);border-color:#4d5480;color:#161a33}
-body[data-room=night] .ddbtn::after{border-top-color:#161a33}
-body[data-room=night] .ddlist{background:#b9c1e4;border-color:#4d5480}
-body[data-room=night] .ddlist button{color:#161a33;border-top-color:rgba(77,84,128,.35)}
-body[data-room=night] .win{width:236px;height:380px;top:-134px;border:7px solid #1b1f38;border-radius:50% 50% 0 0/22% 22% 0 0;background:#05061a;box-shadow:0 0 0 2px #8d96bf,0 0 36px rgba(140,160,255,.28)}
-@media (min-width:700px){body[data-room=night] .win{width:300px;height:470px}}
-body[data-room=night] .win::before,body[data-room=night] .win::after{background:#1b1f38;box-shadow:0 0 0 1px rgba(170,179,217,.45)}
-body[data-room=night] .win::before{width:4px;margin-left:-2px}
-body[data-room=night] .win::after{top:19%;height:4px}
+body[data-room=night]{--wall:#0b0d1f;--wall-2:#151935;
+  background:radial-gradient(760px 560px at 100% 0,var(--glow,transparent),transparent 70%) no-repeat,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'%3E%3Cpath d='M44 0L88 44L44 88L0 44Z' fill='none' stroke='%23c9a45c' stroke-opacity='.11'/%3E%3Cpath d='M44 6L82 44L44 82L6 44Z' fill='none' stroke='%23c9a45c' stroke-opacity='.05'/%3E%3Cg fill='%23c9a45c' fill-opacity='.2'%3E%3Cpath d='M34 53l7-10 3 4 5-8 8 14z'/%3E%3Cpath d='M39 31.6L39.672 33.328L41.4 34L39.672 34.672L39 36.4L38.328 34.672L36.6 34L38.328 33.328Z'/%3E%3Cpath d='M45 27L45.84 29.16L48 30L45.84 30.84L45 33L44.16 30.84L42 30L44.16 29.16Z'/%3E%3Cpath d='M51 31.6L51.672 33.328L53.4 34L51.672 34.672L51 36.4L50.328 34.672L48.6 34L50.328 33.328Z'/%3E%3C/g%3E%3Cg fill='%23e8c77a' fill-opacity='.3'%3E%3Cpath d='M0 -4L1.12 -1.12L4 0L1.12 1.12L0 4L-1.12 1.12L-4 0L-1.12 -1.12Z'/%3E%3Cpath d='M88 -4L89.12 -1.12L92 0L89.12 1.12L88 4L86.88 1.12L84 0L86.88 -1.12Z'/%3E%3Cpath d='M0 84L1.12 86.88L4 88L1.12 89.12L0 92L-1.12 89.12L-4 88L-1.12 86.88Z'/%3E%3Cpath d='M88 84L89.12 86.88L92 88L89.12 89.12L88 92L86.88 89.12L84 88L86.88 86.88Z'/%3E%3C/g%3E%3Cg fill='%23fff' fill-opacity='.28'%3E%3Ccircle cx='18' cy='13' r='.8'/%3E%3Ccircle cx='70' cy='22' r='.7'/%3E%3Ccircle cx='13' cy='64' r='.8'/%3E%3Ccircle cx='66' cy='73' r='.6'/%3E%3Ccircle cx='27' cy='40' r='.5'/%3E%3C/g%3E%3C/svg%3E") 0 0/88px 88px,linear-gradient(180deg,#121539,#080918 70%)}
+body[data-room=night] nav.tabs{background:#0a0c1d;border-top-color:rgba(226,182,90,.22)}
+body[data-room=night] #custom{background:#12152e;border-color:rgba(226,182,90,.25)}
+body[data-room=night] .case{margin-top:166px}
+body[data-room=night] .case-inner{border:0;padding:36px 36px 0;box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 50px rgba(255,190,110,.08);
+  background:url(nightcourt/nc-capital.webp) left top/22px 26px no-repeat,url(nightcourt/nc-capital.webp) right top/22px 26px no-repeat,
+  url(nightcourt/nc-foot.webp) left bottom/22px 20px no-repeat,url(nightcourt/nc-foot.webp) right bottom/22px 20px no-repeat,
+  url(nightcourt/nc-shaft.webp) left top/22px 40px repeat-y,url(nightcourt/nc-shaft.webp) right top/22px 40px repeat-y,
+  radial-gradient(ellipse 80% 30% at 50% 0,rgba(255,190,110,.10),transparent 70%),
+  linear-gradient(90deg,#070403 22px,var(--back) 44px,var(--back) calc(100% - 44px),#070403 calc(100% - 22px))}
+body[data-room=night] .case-inner::before{content:"";position:absolute;left:-8px;right:-8px;bottom:100%;height:30px;pointer-events:none;border-radius:2px 2px 0 0;
+  background:linear-gradient(90deg,rgba(0,0,0,.6),transparent 7px,transparent calc(100% - 7px),rgba(0,0,0,.6)),url(nightcourt/nc-cornice.webp) 0 0/60px 30px repeat-x;
+  box-shadow:0 -4px 12px rgba(0,0,0,.35),0 6px 8px rgba(0,0,0,.5)}
+body[data-room=night] .case-inner::after{content:"";position:absolute;left:-6px;right:-6px;top:100%;height:24px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(0,0,0,.6),transparent 7px,transparent calc(100% - 7px),rgba(0,0,0,.6)),url(nightcourt/nc-base.webp) 0 0/40px 24px repeat-x;
+  box-shadow:0 10px 16px rgba(0,0,0,.5)}
+body[data-room=night] .shelf{background:repeating-linear-gradient(180deg,transparent 0,transparent var(--row),#f1d38a var(--row),#b8873a calc(var(--row) + 1.5px),var(--oak) calc(var(--row) + 1.5px),var(--oak-dark) calc(var(--row) + var(--board) - 3px),#c9973f calc(var(--row) + var(--board) - 3px),#7a5520 calc(var(--row) + var(--board) - 1px),rgba(0,0,0,.65) calc(var(--row) + var(--board)),rgba(0,0,0,0) calc(var(--row) + var(--board) + 10px),transparent calc(var(--row) + var(--gap)))}
+.niche{display:none}
+body[data-room=night] .niche{display:block;position:absolute;left:-14px;right:-14px;height:var(--row);z-index:-1;pointer-events:none;
+  background:url(nightcourt/nc-spandrel-l.webp) left top/44px 44px no-repeat,url(nightcourt/nc-spandrel-r.webp) right top/44px 44px no-repeat,url(nightcourt/nc-keystone.webp) 50% 0/26px 22px no-repeat,
+  radial-gradient(ellipse 55% 80% at 50% 0,rgba(255,196,120,.18),transparent 72%),linear-gradient(180deg,rgba(0,0,0,.3),transparent 30%)}
+body[data-room=night] .sign{bottom:calc(100% + 30px);background:linear-gradient(180deg,#3d2617,#1c1009);color:#f2d690;border-color:#b8873a;outline-color:rgba(0,0,0,.6);font-style:italic;text-shadow:0 1px 0 rgba(0,0,0,.7),0 0 10px rgba(255,200,120,.35);box-shadow:0 0 18px rgba(255,190,110,.18),3px 0 6px rgba(0,0,0,.45)}
+body[data-room=night] .win{width:236px;height:380px;top:-160px;border:0;border-radius:50% 50% 0 0/22% 22% 0 0;background:#05061a;box-shadow:0 0 40px rgba(140,160,255,.22)}
+@media (min-width:700px){body[data-room=night] .win{width:300px;height:483px}}
+body[data-room=night] .win::before,body[data-room=night] .win::after{display:none}
+.win .lace{display:none;inset:0;z-index:7;background:url(nightcourt/nc-window.svg) 0 0/100% 100% no-repeat}
+body[data-room=night] .win .lace{display:block}
 body[data-room=night] .win .city{display:block}
-body[data-room=night] .win.day .city{background-image:url(velaris-day.webp)}
+body[data-room=night] .win.day .city{background-image:url(nightcourt/velaris-day.webp)}
 body[data-room=night] .win .stars{background-image:radial-gradient(1px 1px at 45.4% 24.0%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 45.4% 36.1%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 19.7% 22.0%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 60.9% 8.6%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 31.1% 4.7%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 62.9% 25.4%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 94.6% 27.8%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 64.4% 26.5%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 8.1% 2.5%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 59.6% 32.9%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 44.3% 35.5%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 24.4% 13.1%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 65.6% 19.8%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 41.1% 23.6%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 69.9% 13.9%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 51.2% 2.2%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 75.6% 17.4%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 39.1% 40.3%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 2.1% 9.6%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 47.1% 41.2%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 42.3% 24.2%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 76.7% 12.1%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 31.9% 1.6%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 74.8% 5.8%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 69.9% 1.4%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 78.5% 8.3%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 20.1% 21.9%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 75.9% 18.2%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 13.2% 18.3%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 2.0% 36.4%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 31.2% 37.3%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 20.0% 41.8%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 63.6% 5.1%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 22.5% 11.6%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 33.6% 13.1%,#fff 55%,transparent 62%),radial-gradient(1.5px 1.5px at 9.1% 9.6%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 25.3% 25.7%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 61.7% 6.2%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 48.4% 24.6%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 19.6% 7.3%,#fff 55%,transparent 62%),radial-gradient(0.8px 0.8px at 80.5% 11.2%,#fff 55%,transparent 62%),radial-gradient(1.2px 1.2px at 17.2% 26.8%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 20.9% 40.0%,#fff 55%,transparent 62%),radial-gradient(0.7px 0.7px at 59.9% 18.3%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 12.5% 22.0%,#fff 55%,transparent 62%),radial-gradient(1px 1px at 24.9% 29.9%,#fff 55%,transparent 62%),linear-gradient(118deg,transparent 28%,rgba(160,170,255,.10) 42%,rgba(215,195,255,.17) 49%,rgba(160,175,255,.09) 56%,transparent 70%);animation:twinkle 4s ease-in-out infinite alternate}
 body[data-room=night] .win.dusk .stars,body[data-room=night] .win.dawn .stars{opacity:.45}
 body[data-room=night] .win:is(.night,.dusk,.dawn) .shoot{display:block}
@@ -365,7 +372,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
   <button class="win" id="win" aria-label="Window">
     <span class="sky"></span><span class="stars"></span><span class="orb"></span><span class="grey"></span>
     <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="shoot"></span><span class="city"></span>
-    <span class="wx"></span><span class="flash"></span>
+    <span class="wx"></span><span class="flash"></span><span class="lace"></span>
   </button>
   <h1 class="sign" id="sign">Shelf Life</h1>
   <div class="case-inner"><div class="plates">
@@ -1043,6 +1050,7 @@ const WOODS = {
   ebony:["Ebony","#3d3835","#211d1b","#0e0c0b","#161312"],
   white:["Painted white","#f1ede4","#cfc8ba","#a39c90","#ddd7cb"],
   drift:["Driftwood","#a39a8c","#756d61","#3f3a33","#2b2824"],
+  gilded:["Gilded walnut","#6b4428","#3d2516","#1c110a","#120a06"],
   starlit:["Starlit ebony","#2c3150","#1b1f38","#0d0f1f","#111428"]
 };
 // name, drawing width, drawing height, relative height on the shelf, drawing
@@ -1092,8 +1100,8 @@ function poke(id, el){
 const ROOMS = {"":"Classic study", night:"Night Court"};
 function applyRoom(){ document.body.dataset.room = room; drawWindow(); }
 const THEMES = [
-  {name:"The Night Court", desc:"Starlit ebony, a window over the city of starlight, silver lamps, faelights and a crown", wood:"starlit", room:"night",
-    icon:"radial-gradient(circle at 68% 32%,#eef1ff 0 3px,transparent 4px),radial-gradient(circle at 30% 60%,#fff 0 1px,transparent 2px),linear-gradient(180deg,#232860,#0b0c1f)",
+  {name:"The Night Court", desc:"Carved walnut and gold with arched shelves, a gothic window over the city of starlight, silver lamps, faelights and a crown", wood:"gilded", room:"night",
+    icon:"radial-gradient(circle at 68% 30%,#eef1ff 0 2.5px,transparent 3.5px),radial-gradient(ellipse 40% 55% at 50% 100%,#1a1d48 98%,transparent),linear-gradient(90deg,#d1a04a 3px,#3d2617 3px,#1c1009 calc(100% - 3px),#d1a04a calc(100% - 3px))",
     items:[["starlamp",0,.08,"m"],["crown",0,.5,"s"],["moon",0,.9,"m"],["faejar",1,.12,"m"],["candelabra",1,.86,"m"],["celestial",2,.1,"m"],["wings",2,.9,"m",1]]},
   {name:"Cosy nook", desc:"Walnut, fairy lights, a sleeping cat and a candle", wood:"walnut", items:[["lights",0],["catNap",0,.74,"m"],["candle",0,.14,"s"],["plant",1,.86,"m"],["mug",1,.16,"m"]]},
   {name:"Botanical", desc:"Pine with plants and flowers on every shelf", wood:"pine", items:[["plant",0,.1,"l"],["vase",0,.88,"m"],["cactus",1,.5,"s"],["plant",1,.9,"s",1]]},
@@ -1119,8 +1127,9 @@ function posFront(el, d, m){
 }
 // Decor placed "in front" sits on a shelf board, on top of the books.
 function placeFront(){
-  shelfEl.querySelectorAll(".fdecor").forEach(n => n.remove());
+  shelfEl.querySelectorAll(".fdecor,.niche").forEach(n => n.remove());
   const m = dims();
+  if(room==="night") for(let i = 0; i < m.lines; i++){ const n = document.createElement("div"); n.className = "niche"; n.style.top = (i*(m.R+m.G))+"px"; shelfEl.prepend(n); }
   decor.filter(d => d.mode!=="inline").forEach(d => {
     const el = document.createElement("div");
     el.className = "fdecor" + (d.type==="lights" ? " lights" : "") + (d.flip ? " flip" : "") + (sel===d.id ? " sel" : "") + decorState(d);
