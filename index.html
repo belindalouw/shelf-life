@@ -50,7 +50,7 @@ h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
 .link{background:none;border:0;padding:0;color:var(--brass);text-decoration:underline;text-underline-offset:3px}
 
 .case{max-width:1200px;margin:0 auto 60px;padding:0 20px}
-.case-inner{background:linear-gradient(90deg,var(--oak-deep),var(--back) 6%,var(--back) 94%,var(--oak-deep));border:14px solid var(--oak-dark);border-image:linear-gradient(180deg,var(--oak),var(--oak-dark)) 1;box-shadow:0 30px 60px rgba(0,0,0,.45);padding:18px 14px 0}
+.case-inner{background:linear-gradient(90deg,var(--oak-deep),var(--back) 6%,var(--back) 94%,var(--oak-deep));border:14px solid var(--oak-dark);border-image:linear-gradient(180deg,var(--oak),var(--oak-dark)) 1;box-shadow:0 30px 60px rgba(0,0,0,.45);padding:36px 14px 0}
 .shelf{display:flex;flex-wrap:wrap;align-items:flex-end;column-gap:2px;row-gap:var(--gap);padding-bottom:var(--gap);min-height:calc(var(--row) + var(--gap));
   background:repeating-linear-gradient(180deg,transparent 0,transparent var(--row),var(--oak) var(--row),var(--oak-dark) calc(var(--row) + var(--board)),rgba(0,0,0,.5) calc(var(--row) + var(--board)),transparent calc(var(--row) + var(--gap)));
   margin:0 -14px;padding-left:14px;padding-right:14px}
@@ -79,7 +79,7 @@ h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em}
 .gen span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
 .out{visibility:hidden}
 body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#111a20;border-top:1px solid rgba(239,230,214,.14);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#111a20;border-top:1px solid rgba(239,230,214,.14);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;color:var(--ink-dim);text-decoration:none;font-size:11px;font-weight:500;letter-spacing:.02em}
 nav.tabs a:hover{color:var(--ink)}
 nav.tabs a[aria-current=page]{color:var(--brass)}
@@ -107,7 +107,14 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .set{background:var(--wall-2);border-radius:8px;padding:16px 18px;margin-bottom:12px;display:flex;gap:12px 20px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .set>div{flex:1 1 260px;min-width:0}.set h3{margin:0 0 2px;font:600 15px/1.4 var(--body)}.set p{margin:0;color:var(--ink-dim);font-size:13px}
 .set label.btn{display:inline-block}
-.case{position:relative;margin-top:84px}
+.case{position:relative;margin-top:100px}
+nav.tabs a.on{color:var(--brass)}
+body.editing nav.tabs a[aria-current=page]{color:var(--ink-dim)}
+.sign{position:absolute;left:38px;bottom:100%;margin:0;max-width:calc(100% - 214px);font:400 20px/1.15 var(--display);letter-spacing:.01em;color:var(--paper-ink);background:var(--paper);border:4px solid var(--oak-dark);outline:1px solid rgba(0,0,0,.35);padding:7px 12px 8px;border-radius:2px;box-shadow:3px 0 6px rgba(0,0,0,.35);transform:rotate(-2deg);transform-origin:bottom left;text-wrap:balance;overflow-wrap:anywhere;z-index:1}
+.plates{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:2;pointer-events:none}
+.plates select{pointer-events:auto;min-width:0;max-width:46%;font:600 11px/1.2 var(--body);color:#2a1f08;background:linear-gradient(180deg,#e9c873,#b98d35);border:1px solid #6f5218;border-top:0;border-radius:0 0 5px 5px;padding:3px 4px 4px 8px;box-shadow:0 2px 3px rgba(0,0,0,.45),inset 0 1px 0 rgba(0,0,0,.25);text-overflow:ellipsis;color-scheme:light}
+.plates option{background:#f4ecdc;color:#221d16}
+.nameinput{background:var(--wall);border:1px solid rgba(239,230,214,.25);border-radius:6px;padding:9px 12px;flex:1 1 180px;min-width:0;max-width:280px}
 .case-inner{position:relative;z-index:1}
 .win{position:absolute;right:34px;top:-80px;width:132px;height:184px;padding:0;border:8px solid #efe8d8;border-radius:4px 4px 0 0;background:#0b1026;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.4);z-index:0;display:block}
 .win>span{position:absolute;display:block}
@@ -245,15 +252,17 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 <body>
 
 <section class="view" id="view-library">
-<header>
-  <div>
-    <div class="titlerow"><h1>Shelf Life</h1>
-      <button class="iconbtn" id="btnCustom" aria-label="Customise bookshelf" title="Customise bookshelf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.4-1-1.6-1-2.8 0-1 .8-1.7 2-1.7h2a4 4 0 0 0 4-4c0-4.2-4-7.5-9-7.5z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></button></div>
-    <div class="count" id="count"></div>
-  </div>
-</header>
 
-<div class="controls">
+
+
+<main class="case">
+  <button class="win" id="win" aria-label="Window">
+    <span class="sky"></span><span class="stars"></span><span class="orb"></span><span class="grey"></span>
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
+    <span class="wx"></span><span class="flash"></span>
+  </button>
+  <h1 class="sign" id="sign">Shelf Life</h1>
+  <div class="case-inner"><div class="plates">
   <select id="fShelf" aria-label="Filter by reading status">
     <option value="">All books</option>
     <option value="read">Read</option>
@@ -268,16 +277,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <option value="added">Sort by date added</option>
     <option value="custom">My arrangement</option>
   </select>
-</div>
-
-
-<main class="case">
-  <button class="win" id="win" aria-label="Window">
-    <span class="sky"></span><span class="stars"></span><span class="orb"></span><span class="grey"></span>
-    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
-    <span class="wx"></span><span class="flash"></span>
-  </button>
-  <div class="case-inner"><div id="shelf"></div></div></main>
+  </div><div id="shelf"></div></div></main>
 <aside id="custom" hidden aria-label="Customise bookshelf">
   <div class="chead"><strong>Customise bookshelf</strong><button class="btn" id="customDone">Done</button></div>
   <div id="decorEdit" hidden></div>
@@ -306,6 +306,8 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 <section class="view pane" id="view-settings" hidden>
   <h1>Settings</h1>
   <p class="sub">Your library is stored in this browser on this device.</p>
+  <div class="set"><div><h3><label for="nameInput">Library name</label></h3><p>Shown on the sign that stands on top of your bookcase.</p></div>
+    <input type="text" id="nameInput" maxlength="40" class="nameinput"></div>
   <div class="set"><div><h3>Goodreads</h3><p>Bring in your whole library, with ratings, shelves, reviews and dates.</p></div>
     <button class="btn" id="btnImport">Import Goodreads library</button></div>
   <div class="set"><div><h3>Backup</h3><p>Save your library to a file, or restore it on another device.</p><p id="backupStatus" role="status"></p></div>
@@ -323,6 +325,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 <nav class="tabs" aria-label="Main">
   <a href="#library" data-v="library"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="4.5" height="16" rx="1"/><rect x="9.5" y="7" width="4.5" height="13" rx="1"/><path d="M16.6 8.2l3.4 11.3"/></svg>Library</a>
   <a href="#discover" data-v="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>Discover</a>
+  <a href="#library" id="btnCustom" data-v="custom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.4-1-1.6-1-2.8 0-1 .8-1.7 2-1.7h2a4 4 0 0 0 4-4c0-4.2-4-7.5-9-7.5z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7.5" r="1"/></svg>Customise</a>
   <a href="#stats" data-v="stats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M12 20V4M19 20v-5"/></svg>Stats</a>
   <a href="#settings" data-v="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.6"/><circle cx="8" cy="17" r="2.6"/></svg>Settings</a>
 </nav>
@@ -389,15 +392,15 @@ const SAMPLES = [
  ["The Book Thief","Markus Zusak","9780375842207",552,2005,4,"read",["World War II","Death","The power of words"]]
 ];
 
-let books = [], view = "spine", openId = null, arr = [], found = [], decor = [], wood = "oak", editing = false, sel = null;
+let books = [], view = "spine", openId = null, arr = [], found = [], decor = [], wood = "oak", editing = false, sel = null, libName = "Shelf Life";
 
 /* ---------- storage ---------- */
 function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; arr = Array.isArray(d.arr) ? d.arr : []; if(d.sort) $("#sort").value = d.sort; decor = (Array.isArray(d.decor) ? d.decor : []).filter(x => DECOR[x.type]); wood = WOODS[d.wood] ? d.wood : "oak"; return; } }catch(e){}
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.books)){ books = d.books; view = d.view || "spine"; arr = Array.isArray(d.arr) ? d.arr : []; if(d.sort) $("#sort").value = d.sort; decor = (Array.isArray(d.decor) ? d.decor : []).filter(x => DECOR[x.type]); wood = WOODS[d.wood] ? d.wood : "oak"; if(d.name) libName = String(d.name).slice(0,40); return; } }catch(e){}
   books = SAMPLES.map(([title,author,isbn,pages,year,myRating,shelf,themes],i)=>({id:"s"+i,title,author,isbn,pages,year,myRating,avgRating:0,shelf,themes,notes:"",dateAdded:"",dateRead:"",cover:"",color:"",sample:true,themesTried:true}));
 }
 let saveT;
-function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view,arr,decor,wood,sort:$("#sort").value})); }catch(e){} }, 250); }
+function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify({books,view,arr,decor,wood,name:libName,sort:$("#sort").value})); }catch(e){} }, 250); }
 
 /* ---------- helpers ---------- */
 function hash(s){ let h = 2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h,16777619); } return h>>>0; }
@@ -455,8 +458,6 @@ function visible(){
 }
 function render(){
   const shelf = $("#shelf"), rows = shelfRows(), list = rows.flat().filter(x => !x.type), custom = $("#sort").value==="custom";
-  const read = books.filter(b=>b.shelf==="read").length;
-  $("#count").textContent = books.length ? `${books.length} ${books.length===1?"book":"books"} · ${read} read` + (list.length!==books.length ? ` · showing ${list.length}` : "") : "";
   if(!list.length){
     shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books with that status." : "Your shelf is empty. Find or scan a book in Discover, or import your Goodreads library in Settings."}</div></div>`;
     return;
@@ -905,6 +906,7 @@ function renderStats(){
 
 /* ---------- settings ---------- */
 function renderSettings(){
+  $("#nameInput").value = libName;
   $("#setSamples").hidden = !books.some(b=>b.sample);
   $("#wipeWrap").innerHTML = `<button class="btn" id="wipe">Delete all books</button>`;
   $("#wipe").onclick = () => {
@@ -1064,9 +1066,14 @@ $("#cbody").onclick = e => {
     themeArmed = -1; applyTheme(i); drawCustom();
   }
 };
-function openCustom(){ editing = true; document.body.classList.add("editing"); $("#custom").hidden = false; themeArmed = -1; drawCustom(); drawDecorEdit(); }
-function closeCustom(){ if(!editing) return; editing = false; sel = null; document.body.classList.remove("editing"); $("#custom").hidden = true; render(); }
-$("#btnCustom").onclick = () => editing ? closeCustom() : openCustom();
+function openCustom(){ editing = true; document.body.classList.add("editing"); $("#btnCustom").classList.add("on"); $("#custom").hidden = false; themeArmed = -1; drawCustom(); drawDecorEdit(); }
+function closeCustom(){ if(!editing) return; editing = false; sel = null; document.body.classList.remove("editing"); $("#btnCustom").classList.remove("on"); $("#custom").hidden = true; render(); }
+$("#btnCustom").onclick = e => {
+  e.preventDefault();
+  if(editing){ closeCustom(); return; }
+  if(location.hash && location.hash!=="#library") location.hash = "library";
+  openCustom();
+};
 $("#customDone").onclick = closeCustom;
 
 /* ---------- the window: time of day and weather ---------- */
@@ -1138,6 +1145,13 @@ function initWindow(){
   setInterval(() => { drawWindow(); refreshWx(); }, 5*60e3);
 }
 
+/* ---------- the name sign on top of the bookcase ---------- */
+function drawSign(){
+  const el = $("#sign"); el.textContent = libName;
+  el.style.fontSize = libName.length > 24 ? "14px" : libName.length > 14 ? "17px" : "20px";
+}
+$("#nameInput").oninput = e => { libName = e.target.value.trim().slice(0,40) || "Shelf Life"; drawSign(); save(); };
+
 /* ---------- navigation ---------- */
 function show(){
   let v = location.hash.slice(1); if(!document.getElementById("view-"+v)) v = "library";
@@ -1149,7 +1163,7 @@ function show(){
 }
 addEventListener("hashchange", show);
 
-load(); applyWood(); initWindow(); show();
+load(); applyWood(); drawSign(); initWindow(); show();
 // measure the spine lettering again once the real typeface has arrived
 if(document.fonts && document.fonts.load) document.fonts.load('500 13px "EB Garamond"').then(() => { if(!drag && !openId) render(); }).catch(()=>{});
 addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 150); });
