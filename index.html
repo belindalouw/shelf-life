@@ -114,6 +114,20 @@ body.editing nav.tabs a[aria-current=page]{color:var(--ink-dim)}
 .plates{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:2;pointer-events:none}
 .plates select{pointer-events:auto;min-width:0;max-width:46%;font:600 11px/1.2 var(--body);color:#2a1f08;background:linear-gradient(180deg,#e9c873,#b98d35);border:1px solid #6f5218;border-top:0;border-radius:0 0 5px 5px;padding:3px 4px 4px 8px;box-shadow:0 2px 3px rgba(0,0,0,.45),inset 0 1px 0 rgba(0,0,0,.25);text-overflow:ellipsis;color-scheme:light}
 .plates option{background:#f4ecdc;color:#221d16}
+.plates{z-index:6}
+.plates select{display:none}
+.dd{position:relative;pointer-events:auto;min-width:0;max-width:47%}
+.ddbtn{display:flex;align-items:center;gap:6px;max-width:100%;font:600 11px/1.2 var(--body);color:#2a1f08;background:linear-gradient(180deg,#e9c873,#b98d35);border:1px solid #6f5218;border-top:0;border-radius:0 0 5px 5px;padding:4px 8px 5px 10px;box-shadow:0 2px 3px rgba(0,0,0,.45),inset 0 1px 0 rgba(0,0,0,.25)}
+.ddbtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ddbtn::after{content:"";flex:none;border:4px solid transparent;border-top-color:#2a1f08;margin-top:4px;transition:transform .15s}
+.ddbtn[aria-expanded=true]{border-radius:0;box-shadow:inset 0 1px 0 rgba(0,0,0,.25)}
+.ddbtn[aria-expanded=true]::after{transform:rotate(180deg);margin-top:-4px}
+.ddlist{position:absolute;top:100%;left:0;min-width:100%;width:max-content;background:#c79a3f;border:1px solid #6f5218;border-top-color:rgba(111,82,24,.5);border-radius:0 0 6px 6px;box-shadow:0 6px 10px rgba(0,0,0,.5);overflow:hidden;animation:ddopen .16s ease-out;transform-origin:top}
+@keyframes ddopen{from{transform:scaleY(.6);opacity:0}}
+.ddlist button{display:block;width:100%;text-align:left;font:500 12px/1.2 var(--body);color:#2a1f08;background:none;border:0;border-top:1px solid rgba(111,82,24,.35);padding:8px 12px;white-space:nowrap}
+.ddlist button:first-child{border-top:0}
+.ddlist button:hover,.ddlist button:focus-visible{background:rgba(255,255,255,.22)}
+.ddlist button[aria-selected=true]{font-weight:700;background:rgba(0,0,0,.12)}
 .nameinput{background:var(--wall);border:1px solid rgba(239,230,214,.25);border-radius:6px;padding:9px 12px;flex:1 1 180px;min-width:0;max-width:280px}
 .case-inner{position:relative;z-index:1}
 .win{position:absolute;right:4px;top:-90px;width:178px;height:262px;padding:0;border:8px solid #efe8d8;border-radius:4px 4px 0 0;background:#0b1026;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.4);z-index:0;display:block}
@@ -474,7 +488,7 @@ function render(){
     return `<div class="slot"><button class="spine${w>40?" wide":""}" data-id="${esc(b.id)}" aria-label="${label}" style="width:${w}px;height:${ht}px;background-color:${c};color:${b.ink||inkOn(c)}"><span class="t">${esc(b.title)}</span><span class="a">${esc(b.author.split(/\s+/).pop())}</span></button></div>`;
   }).join("") + "</div>").join("");
   shelf.querySelectorAll(".spine").forEach(el => io.observe(el));
-  placeFront();
+  placeFront(); syncPlates();
 }
 
 /* ---------- spine colours taken from the front cover ---------- */
@@ -1145,6 +1159,42 @@ function initWindow(){
   setInterval(() => { drawWindow(); refreshWx(); }, 5*60e3);
 }
 
+/* ---------- the brass menus under the top board ---------- */
+// The hidden <select> elements still hold the chosen value; these tabs open a list that extends below them.
+function closePlates(){
+  document.querySelectorAll(".dd").forEach(dd => { dd.querySelector(".ddlist").hidden = true; dd.querySelector(".ddbtn").setAttribute("aria-expanded", "false"); });
+}
+function syncPlates(){
+  document.querySelectorAll(".dd").forEach(dd => {
+    const sel = document.getElementById(dd.dataset.for);
+    dd.querySelector(".ddbtn span").textContent = sel.options[sel.selectedIndex].text;
+    dd.querySelectorAll(".ddlist button").forEach(b => b.setAttribute("aria-selected", b.dataset.v===sel.value));
+  });
+}
+function initPlates(){
+  ["fShelf","sort"].forEach(id => {
+    const sel = document.getElementById(id), dd = document.createElement("div");
+    dd.className = "dd"; dd.dataset.for = id;
+    dd.innerHTML = `<button class="ddbtn" aria-haspopup="listbox" aria-expanded="false" aria-label="${esc(sel.getAttribute("aria-label"))}"><span></span></button>`
+      + `<div class="ddlist" role="listbox" hidden>${[...sel.options].map(o => `<button role="option" data-v="${esc(o.value)}">${esc(o.text)}</button>`).join("")}</div>`;
+    sel.after(dd);
+    dd.querySelector(".ddbtn").onclick = () => {
+      const open = dd.querySelector(".ddlist").hidden;
+      closePlates();
+      if(open){ dd.querySelector(".ddlist").hidden = false; dd.querySelector(".ddbtn").setAttribute("aria-expanded", "true"); }
+    };
+    dd.querySelector(".ddlist").onclick = e => {
+      const b = e.target.closest("button"); if(!b) return;
+      sel.value = b.dataset.v; closePlates();
+      sel.dispatchEvent(new Event("input"));
+      dd.querySelector(".ddbtn").focus();
+    };
+  });
+  document.addEventListener("pointerdown", e => { if(!e.target.closest(".dd")) closePlates(); });
+  document.addEventListener("keydown", e => { if(e.key==="Escape") closePlates(); });
+  syncPlates();
+}
+
 /* ---------- the name sign on top of the bookcase ---------- */
 function drawSign(){
   const el = $("#sign"); el.textContent = libName;
@@ -1163,7 +1213,7 @@ function show(){
 }
 addEventListener("hashchange", show);
 
-load(); applyWood(); drawSign(); initWindow(); show();
+load(); initPlates(); applyWood(); drawSign(); initWindow(); show();
 // measure the spine lettering again once the real typeface has arrived
 if(document.fonts && document.fonts.load) document.fonts.load('500 13px "EB Garamond"').then(() => { if(!drag && !openId) render(); }).catch(()=>{});
 addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 150); });
