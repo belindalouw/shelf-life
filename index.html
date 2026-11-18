@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shelf Life</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@400;500;600&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@400;500;600&family=Caveat:wght@500&family=Courier+Prime:wght@400;700&display=swap">
 <style>
 /* Layout: a single bookcase fills the page; a slim toolbar sits on the wall above it; books open in a reading-desk dialog. */
 :root{
@@ -201,7 +201,7 @@ body[data-room=night] .win.dusk .stars,body[data-room=night] .win.dawn .stars{op
 body[data-room=night] .win:is(.night,.dusk,.dawn) .shoot{display:block}
 
 /* ---------- Lamplit study: the main room ---------- */
-.arch,.plaque,.board{display:none}
+.arch,.pull,.board{display:none}
 body[data-room=study]{--wall:#15201a;--wall-2:#1c2820;--ink:#ecdfc4;--ink-dim:#b4a88c;--brass:#d9b56a;--pil:24px;
   background:radial-gradient(640px 480px at 92% 0,var(--glow,transparent),transparent 70%) no-repeat,
     radial-gradient(560px 460px at 18% 46%,rgba(255,186,105,.09),transparent 70%) no-repeat,
@@ -210,7 +210,7 @@ body[data-room=study]{--wall:#15201a;--wall-2:#1c2820;--ink:#ecdfc4;--ink-dim:#b
     repeating-linear-gradient(90deg,rgba(0,0,0,.13) 0 22px,rgba(255,255,255,.012) 22px 44px),
     linear-gradient(180deg,#1b2a21,#111a14 75%);
   background-blend-mode:normal,normal,soft-light,normal,normal,normal}
-body[data-room=study] .sign{display:none}
+body[data-room=study] .sign{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 body[data-room=study] .case{margin-top:172px;padding:0 17px;max-width:700px}
 body[data-room=study] .case::after{content:"";position:absolute;left:0;right:0;top:calc(100% - 16px);height:100vh;z-index:-1;pointer-events:none;
   border-image:linear-gradient(180deg,#33463a 0,#1f2c24 2px,#141d17 4px,#1a261f 6px,#16211a 33px,#0a0e0b 36px,#000 38px,#2b1c12 39px,#342218 44px,#261810 60px,#302016 61px,#24170f 86px,#2d1e14 87px,#1d130c 130px,#0c0805 260px) fill 0/0/0 100vw}
@@ -237,21 +237,35 @@ body[data-room=study] .arch::before{z-index:0;
     url(study/arch-band-shade.webp) 50% 0/auto 100% repeat-x;
   -webkit-mask-image:linear-gradient(180deg,#000 45%,transparent 96%);mask-image:linear-gradient(180deg,#000 45%,transparent 96%)}
 body[data-room=study] .arch::after{z-index:1;
-  background:url(study/keystone.webp) 50% 0/calc(min(50%,230px)*.24) auto no-repeat,
-    url(study/arch-l.webp) left top/min(50%,230px) auto no-repeat,url(study/arch-r.webp) right top/min(50%,230px) auto no-repeat,
+  background:url(study/arch-l.webp) left top/min(50%,230px) auto no-repeat,url(study/arch-r.webp) right top/min(50%,230px) auto no-repeat,
     url(study/arch-band.webp) 50% 0/auto 100% repeat-x}
-body[data-room=study] .plaque{display:block;position:absolute;z-index:2;left:50%;top:47%;transform:translate(-50%,-50%);margin:0;width:max-content;max-width:66%;padding:6px 20px 7px;
-  font:700 15px/1.15 var(--display);letter-spacing:.2em;text-transform:uppercase;text-align:center;color:#2b1d0b;text-wrap:balance;overflow-wrap:anywhere;
-  background:radial-gradient(circle at 8px 50%,#5d4419 0 1.3px,#f6e2a6 1.9px,rgba(120,90,30,.6) 2.4px,transparent 2.8px),radial-gradient(circle at calc(100% - 8px) 50%,#5d4419 0 1.3px,#f6e2a6 1.9px,rgba(120,90,30,.6) 2.4px,transparent 2.8px),
-    linear-gradient(180deg,#f2dc9e,#d4ad5a 40%,#a97f32 56%,#d9b866);
-  border:1px solid #5f4514;border-radius:2px;text-shadow:0 1px 0 rgba(255,240,200,.55);
-  box-shadow:inset 0 1px 0 rgba(255,246,214,.75),inset 0 -1px 0 rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.65)}
-body[data-room=study] .plates{top:0;margin-top:calc(min(50% - var(--pil),230px) - 38px)}
-body[data-room=study] .ddbtn{border-top:1px solid #6f5218;border-radius:2px;font:italic 600 14px/1.1 var(--display);padding:5px 10px 6px 12px;color:#22160a;
-  background:linear-gradient(180deg,#eed49a,#b28a3e 70%,#9c7530);box-shadow:inset 0 1px 0 rgba(255,246,214,.6),0 3px 5px rgba(0,0,0,.6)}
-body[data-room=study] .ddbtn[aria-expanded=true]{border-radius:2px 2px 0 0}
-body[data-room=study] .ddlist{background:#e4c886;border-radius:0 0 3px 3px}
-body[data-room=study] .ddlist button{font:italic 600 14px/1.2 var(--display);padding:9px 14px}
+/* one brass card-catalogue pull at the top of the arch: tug the knob and a catalogue card drops down */
+body[data-room=study] .plates{display:none}
+body[data-room=study] .pull{display:block;position:absolute;z-index:6;left:50%;top:1px;width:calc(min(50%,230px)*.98);transform:translateX(-50%);container-type:inline-size}
+.pull-btn{display:block;position:relative;width:100%;aspect-ratio:136/103.8;padding:0;border:0;border-radius:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  background:url(study/pull.webp) 0 0/100% 100% no-repeat}
+.pull-label{position:absolute;left:15.4%;right:15.4%;top:19.2%;bottom:50.3%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;pointer-events:none;
+  color:#2b2016;text-align:center;text-transform:uppercase;text-shadow:0 0 .5px rgba(43,32,22,.55)}
+.pull-label b{font:700 9.4cqw/1 "Courier Prime","Courier New",monospace;letter-spacing:.05em;white-space:nowrap}
+.pull-label i{font:400 6.6cqw/1 "Courier Prime","Courier New",monospace;font-style:normal;letter-spacing:.08em;white-space:nowrap;opacity:.85}
+.pull-knob{position:absolute;inset:0;pointer-events:none;background:url(study/pull-knob.webp) 0 0/100% 100% no-repeat;transform-origin:50% 82.6%;
+  transition:transform .26s cubic-bezier(.3,1.6,.55,1),filter .26s}
+.pull-btn:hover .pull-knob{transform:scale(1.05)}
+.pull-btn[aria-expanded=true] .pull-knob{transform:translateY(3%) scale(1.22);filter:drop-shadow(0 6px 5px rgba(0,0,0,.6))}
+.pull-card{position:absolute;left:50%;top:calc(100% - 12px);z-index:-1;width:252px;transform:translateX(-50%);padding:14px 12px 8px 20px;border-radius:2px;color:#2b2016;
+  background:linear-gradient(90deg,transparent 10px,rgba(168,53,42,.5) 10px 11px,transparent 11px),repeating-linear-gradient(180deg,transparent 0 31px,rgba(77,107,140,.22) 31px 32px) 0 36px,var(--grain) 0 0/140px 140px,#efe4c9;
+  background-blend-mode:normal,normal,soft-light,normal;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 16px 30px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.4);animation:cardout .34s cubic-bezier(.2,.8,.3,1)}
+@keyframes cardout{from{clip-path:inset(0 0 100% 0);transform:translateX(-50%) translateY(-26px)}to{clip-path:inset(0 0 0 0)}}
+.pc-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.pull-card h4{margin:0 0 4px;padding-bottom:5px;border-bottom:2px solid rgba(168,53,42,.7);font:700 11px/1 "Courier Prime","Courier New",monospace;letter-spacing:.16em;text-transform:uppercase;color:#9c3024}
+.pull-card button{display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:0 4px;border:0;border-radius:2px;background:none;cursor:pointer;
+  font:400 15px/1 "Courier Prime","Courier New",monospace;color:#2b2016;text-align:left}
+.pull-card button::before{content:"";flex:none;width:12px;height:12px;box-sizing:border-box;border:1.5px solid rgba(43,32,22,.45);border-radius:50%}
+.pull-card button[aria-pressed=true]{font-weight:700}
+.pull-card button[aria-pressed=true]::before{border-color:#a8352a;background:radial-gradient(circle,#a8352a 0 3px,transparent 3.5px)}
+.pull-card button:hover{background:rgba(168,53,42,.08)}
+@media (min-width:700px){.pull-card{width:280px}}
 body[data-room=study] .shelf{background:none;margin:0;padding:0 8px var(--gap)}
 body[data-room=study] .niche{display:block;position:absolute;left:0;right:0;height:var(--row);z-index:-1;pointer-events:none;
   background:linear-gradient(180deg,rgba(0,0,0,.62),rgba(0,0,0,.22) 20px,rgba(0,0,0,0) 64px),linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,0) 18px,rgba(0,0,0,0) calc(100% - 18px),rgba(0,0,0,.6))}
@@ -487,7 +501,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
     <span class="wx"></span><span class="flash"></span><span class="lace"></span>
   </button>
   <h1 class="sign" id="sign">Shelf Life</h1>
-  <div class="case-inner"><div class="arch"><p class="plaque" id="plaque" role="heading" aria-level="1">Shelf Life</p></div><div class="plates">
+  <div class="case-inner"><div class="arch"><div class="pull" id="pull"><button type="button" class="pull-btn" id="pullBtn" aria-expanded="false" aria-controls="pullCard"><span class="pull-label"><b id="pullShow">All books</b><i id="pullSort">by author</i></span><span class="pull-knob"></span></button><div class="pull-card" id="pullCard" hidden></div></div></div><div class="plates">
   <select id="fShelf" aria-label="Filter by reading status">
     <option value="">All books</option>
     <option value="read">Read</option>
@@ -531,7 +545,7 @@ video{width:100%;max-height:300px;background:#111;border-radius:8px;object-fit:c
 <section class="view pane" id="view-settings" hidden>
   <h1>Settings</h1>
   <p class="sub">Your library is stored in this browser on this device.</p>
-  <div class="set"><div><h3><label for="nameInput">Library name</label></h3><p>Shown on the nameplate on your bookcase.</p></div>
+  <div class="set"><div><h3><label for="nameInput">Library name</label></h3><p>Shown on the sign in the Plain and Night Court rooms.</p></div>
     <input type="text" id="nameInput" maxlength="40" class="nameinput"></div>
   <div class="set"><div><h3>Goodreads</h3><p>Bring in your whole library, with ratings, shelves, reviews and dates.</p></div>
     <button class="btn" id="btnImport">Import Goodreads library</button></div>
@@ -687,6 +701,7 @@ function render(){
   const shelf = $("#shelf"), rows = shelfRows(), list = rows.flat().filter(x => !x.type), custom = $("#sort").value==="custom";
   if(!list.length){
     shelf.innerHTML = `<div class="shelf"><div class="empty">${books.length ? "No books with that status." : "Your shelf is empty. Find or scan a book in Discover, or import your Goodreads library in Settings."}</div></div>`;
+    placeFront(); syncPlates();
     return;
   }
   const small = matchMedia("(max-width:640px)").matches;
@@ -1443,6 +1458,42 @@ function syncPlates(){
     dd.querySelector(".ddbtn span").textContent = sel.options[sel.selectedIndex].text;
     dd.querySelectorAll(".ddlist button").forEach(b => b.setAttribute("aria-selected", b.dataset.v===sel.value));
   });
+  syncPull();
+}
+
+/* ---------- the card-catalogue pull in the Lamplit study ---------- */
+// One brass label holder shows what is on the shelf; tugging its knob drops a catalogue card for choosing what to show and how to sort.
+const PULL_SHOW = {"":"All", "read":"Read", "currently-reading":"Reading", "to-read":"TBR", "dnf":"DNF"};
+const PULL_SORT = {author:"Author", title:"Title", rating:"Rating", added:"Newest", custom:"My order"};
+const PULL_LABEL = {author:"by author", title:"by title", rating:"by rating", added:"newest first", custom:"my order"};
+function syncPull(){
+  const f = $("#fShelf").value, so = $("#sort").value;
+  $("#pullShow").textContent = f ? PULL_SHOW[f] : "All books";
+  $("#pullSort").textContent = PULL_LABEL[so];
+  $("#pullBtn").setAttribute("aria-label", `Show and sort books. Showing ${$("#fShelf").selectedOptions[0].text.toLowerCase()}, ${$("#sort").selectedOptions[0].text.toLowerCase()}.`);
+  $("#pullCard").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.f !== undefined ? b.dataset.f===f : b.dataset.s===so));
+}
+function setPull(open){
+  clearTimeout(setPull.t);
+  $("#pullBtn").setAttribute("aria-expanded", open);
+  if(open) setPull.t = setTimeout(() => { $("#pullCard").hidden = false; }, 130);   // the knob comes out first, then the card drops
+  else $("#pullCard").hidden = true;
+}
+function initPull(){
+  const card = $("#pullCard");
+  card.innerHTML = `<div class="pc-cols"><div role="group" aria-labelledby="pcShow"><h4 id="pcShow">Show</h4>${Object.entries(PULL_SHOW).map(([v,l]) => `<button type="button" data-f="${v}">${l}</button>`).join("")}</div>`
+    + `<div role="group" aria-labelledby="pcSort"><h4 id="pcSort">Sort by</h4>${Object.entries(PULL_SORT).map(([v,l]) => `<button type="button" data-s="${v}">${l}</button>`).join("")}</div></div>`;
+  $("#pullBtn").onclick = () => setPull($("#pullBtn").getAttribute("aria-expanded") !== "true");
+  card.onclick = e => {
+    const b = e.target.closest("button"); if(!b) return;
+    const sel = b.dataset.f !== undefined ? $("#fShelf") : $("#sort");
+    sel.value = b.dataset.f !== undefined ? b.dataset.f : b.dataset.s;
+    sel.dispatchEvent(new Event("input"));
+    setTimeout(() => { setPull(false); $("#pullBtn").focus(); }, 220);
+  };
+  document.addEventListener("pointerdown", e => { if(!e.target.closest(".pull")) setPull(false); });
+  document.addEventListener("keydown", e => { if(e.key==="Escape" && !card.hidden){ setPull(false); $("#pullBtn").focus(); } });
+  syncPull();
 }
 function initPlates(){
   ["fShelf","sort"].forEach(id => {
@@ -1472,8 +1523,6 @@ function initPlates(){
 function drawSign(){
   const el = $("#sign"); el.textContent = libName;
   el.style.fontSize = libName.length > 24 ? "14px" : libName.length > 14 ? "17px" : "20px";
-  const pl = $("#plaque"); pl.textContent = libName;
-  pl.style.fontSize = libName.length > 24 ? "11px" : libName.length > 14 ? "13px" : "";
 }
 $("#nameInput").oninput = e => { libName = e.target.value.trim().slice(0,40) || "Shelf Life"; drawSign(); save(); };
 
@@ -1488,7 +1537,7 @@ function show(){
 }
 addEventListener("hashchange", show);
 
-load(); initPlates(); applyWood(); applyRoom(); drawSign(); initWindow(); show();
+load(); initPull(); initPlates(); applyWood(); applyRoom(); drawSign(); initWindow(); show();
 // measure the spine lettering again once the real typeface has arrived
 if(document.fonts && document.fonts.load) document.fonts.load('500 13px "EB Garamond"').then(() => { if(!drag && !openId) render(); }).catch(()=>{});
 addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 150); });
