@@ -252,15 +252,12 @@ body[data-room=study] .ddbtn{border-top:1px solid #6f5218;border-radius:2px;font
 body[data-room=study] .ddbtn[aria-expanded=true]{border-radius:2px 2px 0 0}
 body[data-room=study] .ddlist{background:#e4c886;border-radius:0 0 3px 3px}
 body[data-room=study] .ddlist button{font:italic 600 14px/1.2 var(--display);padding:9px 14px}
-body[data-room=study] .shelf{background:none;margin:0;padding:0 8px}
+body[data-room=study] .shelf{background:none;margin:0;padding:0 8px var(--gap)}
 body[data-room=study] .niche{display:block;position:absolute;left:0;right:0;height:var(--row);z-index:-1;pointer-events:none;
   background:linear-gradient(180deg,rgba(0,0,0,.62),rgba(0,0,0,.22) 20px,rgba(0,0,0,0) 64px),linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,0) 18px,rgba(0,0,0,0) calc(100% - 18px),rgba(0,0,0,.6))}
 body[data-room=study] .niche.first{background:linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,0) 18px,rgba(0,0,0,0) calc(100% - 18px),rgba(0,0,0,.6))}
 body[data-room=study] .board{display:block;position:absolute;left:0;right:0;height:var(--board);z-index:-1;pointer-events:none;
   background:url(study/board.webp) 0 0/60px var(--board) repeat-x;box-shadow:0 8px 10px rgba(0,0,0,.55)}
-body[data-room=study] .board.belt{left:calc(-9px - var(--pil));right:calc(-9px - var(--pil));padding:0 24px;
-  background:url(study/belt-l.webp) left top/24px var(--board) no-repeat,url(study/belt-r.webp) right top/24px var(--board) no-repeat,url(study/belt.webp) 0 0/60px var(--board) repeat-x;
-  background-origin:border-box,border-box,content-box;background-clip:border-box,border-box,content-box;box-shadow:none;filter:drop-shadow(0 8px 8px rgba(0,0,0,.55))}
 body[data-room=study] .win{right:24px;top:-166px;width:150px;height:196px;border:0;border-radius:75px 75px 0 0;box-shadow:0 12px 26px rgba(0,0,0,.55)}
 @media (min-width:700px){body[data-room=study] .win{right:48px;top:-168px;width:176px;height:230px;border-radius:88px 88px 0 0}}
 body[data-room=study] .win::before,body[data-room=study] .win::after{display:none}
@@ -1259,7 +1256,7 @@ function placeFront(){
     const n = document.createElement("div"), lift = i ? m.G - m.B : 0;
     n.className = "niche" + (i ? "" : " first"); n.style.top = (i*(m.R+m.G) - lift)+"px"; n.style.height = (m.R + lift)+"px"; shelfEl.prepend(n);
     const b = document.createElement("div");
-    b.className = "board" + (m.lines >= 3 && i === m.lines-2 ? " belt" : ""); b.style.top = (i*(m.R+m.G) + m.R)+"px"; shelfEl.prepend(b);
+    b.className = "board"; b.style.top = (i*(m.R+m.G) + m.R)+"px"; shelfEl.prepend(b);
   }
   decor.filter(d => d.mode!=="inline").forEach(d => {
     const el = document.createElement("div");
