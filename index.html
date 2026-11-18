@@ -241,18 +241,18 @@ body[data-room=study] .arch::after{z-index:1;
     url(study/arch-band.webp) 50% 0/auto 100% repeat-x}
 /* one brass card-catalogue pull at the top of the arch: tug the knob and a catalogue card drops down */
 body[data-room=study] .plates{display:none}
-body[data-room=study] .pull{display:block;position:absolute;z-index:6;left:50%;top:1px;width:calc(min(50%,230px)*.98);transform:translateX(-50%);container-type:inline-size}
+body[data-room=study] .pull{display:block;position:absolute;z-index:6;left:50%;top:1px;width:calc(min(50%,230px)*.54);transform:translateX(-50%);container-type:inline-size}
 .pull-btn{display:block;position:relative;width:100%;aspect-ratio:136/103.8;padding:0;border:0;border-radius:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;
   background:url(study/pull.webp) 0 0/100% 100% no-repeat}
-.pull-label{position:absolute;left:15.4%;right:15.4%;top:19.2%;bottom:50.3%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;pointer-events:none;
+.pull-label{position:absolute;left:15.4%;right:15.4%;top:19.2%;bottom:50.3%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2%;pointer-events:none;
   color:#2b2016;text-align:center;text-transform:uppercase;text-shadow:0 0 .5px rgba(43,32,22,.55)}
-.pull-label b{font:700 9.4cqw/1 "Courier Prime","Courier New",monospace;letter-spacing:.05em;white-space:nowrap}
-.pull-label i{font:400 6.6cqw/1 "Courier Prime","Courier New",monospace;font-style:normal;letter-spacing:.08em;white-space:nowrap;opacity:.85}
+.pull-label b{font:700 12cqw/1 "Courier Prime","Courier New",monospace;letter-spacing:.02em;white-space:nowrap}
+.pull-label i{font:700 8.6cqw/1 "Courier Prime","Courier New",monospace;font-style:normal;letter-spacing:.02em;white-space:nowrap;opacity:.8}
 .pull-knob{position:absolute;inset:0;pointer-events:none;background:url(study/pull-knob.webp) 0 0/100% 100% no-repeat;transform-origin:50% 82.6%;
   transition:transform .26s cubic-bezier(.3,1.6,.55,1),filter .26s}
 .pull-btn:hover .pull-knob{transform:scale(1.05)}
 .pull-btn[aria-expanded=true] .pull-knob{transform:translateY(3%) scale(1.22);filter:drop-shadow(0 6px 5px rgba(0,0,0,.6))}
-.pull-card{position:absolute;left:50%;top:calc(100% - 12px);z-index:-1;width:252px;transform:translateX(-50%);padding:14px 12px 8px 20px;border-radius:2px;color:#2b2016;
+.pull-card{position:absolute;left:50%;top:calc(100% - 6px);z-index:-1;width:252px;transform:translateX(-50%);padding:14px 12px 8px 20px;border-radius:2px;color:#2b2016;
   background:linear-gradient(90deg,transparent 10px,rgba(168,53,42,.5) 10px 11px,transparent 11px),repeating-linear-gradient(180deg,transparent 0 31px,rgba(77,107,140,.22) 31px 32px) 0 36px,var(--grain) 0 0/140px 140px,#efe4c9;
   background-blend-mode:normal,normal,soft-light,normal;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 16px 30px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.4);animation:cardout .34s cubic-bezier(.2,.8,.3,1)}
