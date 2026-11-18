@@ -228,14 +228,15 @@ body[data-room=study] .case-inner{border:0;padding:0 var(--pil);box-shadow:0 34p
 /* walnut shows its own figured boards; any other wood tints a neutral set of the same boards */
 :root{--planks:url(study/planks.webp);--planks-blend:multiply}
 :root[data-wood=walnut]{--planks:url(study/planks-walnut.webp);--planks-blend:normal}
-body[data-room=study] .case-inner::before{content:"";position:absolute;left:-17px;right:-17px;bottom:100%;height:76px;padding:0 30px;pointer-events:none;
-  background:url(study/finial.webp) left 20px top/18px 42px no-repeat,url(study/finial.webp) right 20px top/18px 42px no-repeat,
-    url(study/cornice-l.webp) left bottom/30px 34px no-repeat,url(study/cornice-r.webp) right bottom/30px 34px no-repeat,url(study/cornice.webp) 0 100%/60px 34px repeat-x;
-  background-origin:border-box,border-box,border-box,border-box,content-box;background-clip:border-box,border-box,border-box,border-box,content-box;filter:drop-shadow(0 -2px 8px rgba(0,0,0,.35))}
+body[data-room=study] .case-inner::before{content:"";position:absolute;left:-17px;right:-17px;bottom:100%;height:34px;padding:0 30px;pointer-events:none;
+  background:url(study/cornice-l.webp) left top/30px 34px no-repeat,url(study/cornice-r.webp) right top/30px 34px no-repeat,url(study/cornice.webp) 0 0/60px 34px repeat-x;
+  background-origin:border-box,border-box,content-box;background-clip:border-box,border-box,content-box;filter:drop-shadow(0 -2px 8px rgba(0,0,0,.35))}
 body[data-room=study] .case-inner::after{content:"";position:absolute;left:-10px;right:-10px;top:calc(100% - var(--gap) + var(--board));height:36px;padding:0 30px;pointer-events:none;
   background:url(study/plinth-l.webp) left top/30px 36px no-repeat,url(study/plinth-r.webp) right top/30px 36px no-repeat,url(study/plinth.webp) 0 0/60px 36px repeat-x;
   background-origin:border-box,border-box,content-box;background-clip:border-box,border-box,content-box;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
-body[data-room=study] .arch{display:block;position:relative;height:0;padding-top:min(50%,230px)}
+body[data-room=study] .arch{display:block;position:relative;height:0;padding-top:min(50%,230px);pointer-events:none}
+/* the top shelf rises into the arch, so its carved corners overlap the outermost books a little */
+body[data-room=study] #shelf{margin-top:calc(min(50%,230px)*-.4)}
 body[data-room=study] .arch::before,body[data-room=study] .arch::after{content:"";position:absolute;inset:0;pointer-events:none}
 body[data-room=study] .arch::before{z-index:0;
   background:url(study/arch-shade-l.webp) left top/min(50%,230px) auto no-repeat,url(study/arch-shade-r.webp) right top/min(50%,230px) auto no-repeat,
@@ -247,7 +248,7 @@ body[data-room=study] .arch::after{z-index:1;
     url(study/arch-band.webp) 50% 0/auto 100% repeat-x}
 /* one brass card-catalogue pull at the top of the arch: tug the knob and a catalogue card drops down */
 body[data-room=study] .plates{display:none}
-body[data-room=study] .pull{display:block;position:absolute;z-index:6;left:50%;top:1px;width:calc(min(50%,230px)*.54);transform:translateX(-50%);container-type:inline-size}
+body[data-room=study] .pull{display:block;position:absolute;z-index:6;pointer-events:auto;left:50%;top:1px;width:calc(min(50%,230px)*.54);transform:translateX(-50%);container-type:inline-size}
 .pull-btn{display:block;position:relative;width:100%;aspect-ratio:136/103.8;padding:0;border:0;border-radius:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;
   background:url(study/pull.webp) 0 0/100% 100% no-repeat}
 .pull-label{position:absolute;left:15.4%;right:15.4%;top:19.2%;bottom:50.3%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2%;pointer-events:none;
