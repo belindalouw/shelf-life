@@ -221,12 +221,17 @@ body[data-room=study] .view.pane{padding-bottom:calc(102px + env(safe-area-inset
 body[data-room=study] #view-library{display:flow-root;min-height:100vh;overflow:clip}
 body[data-room=study] .case-inner{border:0;padding:0 var(--pil);box-shadow:0 34px 60px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.35);
   background:url(study/capital.webp) left top/24px 22px no-repeat,url(study/capital.webp) right top/24px 22px no-repeat,
+    url(study/foot.webp) left 0 bottom calc(var(--gap) - var(--board))/24px 30px no-repeat,url(study/foot.webp) right 0 bottom calc(var(--gap) - var(--board))/24px 30px no-repeat,
     url(study/shaft.webp) left top/24px 60px repeat-y,url(study/shaft.webp) right top/24px 60px repeat-y,
-    url(study/planks.webp) var(--pil) 0/140px 240px repeat;
-  background-color:var(--oak);background-blend-mode:normal,normal,normal,normal,multiply}
-body[data-room=study] .case-inner::before{content:"";position:absolute;left:-17px;right:-17px;bottom:100%;height:34px;padding:0 30px;pointer-events:none;
-  background:url(study/cornice-l.webp) left top/30px 34px no-repeat,url(study/cornice-r.webp) right top/30px 34px no-repeat,url(study/cornice.webp) 0 0/60px 34px repeat-x;
-  background-origin:border-box,border-box,content-box;background-clip:border-box,border-box,content-box;filter:drop-shadow(0 -2px 8px rgba(0,0,0,.35))}
+    var(--planks) var(--pil) 0/140px 480px repeat;
+  background-color:var(--oak);background-blend-mode:normal,normal,normal,normal,normal,normal,var(--planks-blend)}
+/* walnut shows its own figured boards; any other wood tints a neutral set of the same boards */
+:root{--planks:url(study/planks.webp);--planks-blend:multiply}
+:root[data-wood=walnut]{--planks:url(study/planks-walnut.webp);--planks-blend:normal}
+body[data-room=study] .case-inner::before{content:"";position:absolute;left:-17px;right:-17px;bottom:100%;height:76px;padding:0 30px;pointer-events:none;
+  background:url(study/finial.webp) left 20px top/18px 42px no-repeat,url(study/finial.webp) right 20px top/18px 42px no-repeat,
+    url(study/cornice-l.webp) left bottom/30px 34px no-repeat,url(study/cornice-r.webp) right bottom/30px 34px no-repeat,url(study/cornice.webp) 0 100%/60px 34px repeat-x;
+  background-origin:border-box,border-box,border-box,border-box,content-box;background-clip:border-box,border-box,border-box,border-box,content-box;filter:drop-shadow(0 -2px 8px rgba(0,0,0,.35))}
 body[data-room=study] .case-inner::after{content:"";position:absolute;left:-10px;right:-10px;top:calc(100% - var(--gap) + var(--board));height:36px;padding:0 30px;pointer-events:none;
   background:url(study/plinth-l.webp) left top/30px 36px no-repeat,url(study/plinth-r.webp) right top/30px 36px no-repeat,url(study/plinth.webp) 0 0/60px 36px repeat-x;
   background-origin:border-box,border-box,content-box;background-clip:border-box,border-box,content-box;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
@@ -237,7 +242,8 @@ body[data-room=study] .arch::before{z-index:0;
     url(study/arch-band-shade.webp) 50% 0/auto 100% repeat-x;
   -webkit-mask-image:linear-gradient(180deg,#000 45%,transparent 96%);mask-image:linear-gradient(180deg,#000 45%,transparent 96%)}
 body[data-room=study] .arch::after{z-index:1;
-  background:url(study/arch-l.webp) left top/min(50%,230px) auto no-repeat,url(study/arch-r.webp) right top/min(50%,230px) auto no-repeat,
+  background:url(study/cartouche.webp) 50% 0/calc(min(50%,230px)*.88) auto no-repeat,
+    url(study/arch-l.webp) left top/min(50%,230px) auto no-repeat,url(study/arch-r.webp) right top/min(50%,230px) auto no-repeat,
     url(study/arch-band.webp) 50% 0/auto 100% repeat-x}
 /* one brass card-catalogue pull at the top of the arch: tug the knob and a catalogue card drops down */
 body[data-room=study] .plates{display:none}
@@ -271,7 +277,7 @@ body[data-room=study] .niche{display:block;position:absolute;left:0;right:0;heig
   background:linear-gradient(180deg,rgba(0,0,0,.62),rgba(0,0,0,.22) 20px,rgba(0,0,0,0) 64px),linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,0) 18px,rgba(0,0,0,0) calc(100% - 18px),rgba(0,0,0,.6))}
 body[data-room=study] .niche.first{background:linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,0) 18px,rgba(0,0,0,0) calc(100% - 18px),rgba(0,0,0,.6))}
 body[data-room=study] .board{display:block;position:absolute;left:0;right:0;height:var(--board);z-index:-1;pointer-events:none;
-  background:url(study/board.webp) 0 0/60px var(--board) repeat-x;box-shadow:0 8px 10px rgba(0,0,0,.55)}
+  background:url(study/escutcheon.webp) 50% 50%/16px 12px no-repeat,url(study/board.webp) 0 0/60px var(--board) repeat-x;box-shadow:0 8px 10px rgba(0,0,0,.55)}
 body[data-room=study] .win{right:24px;top:-166px;width:150px;height:196px;border:0;border-radius:75px 75px 0 0;box-shadow:0 12px 26px rgba(0,0,0,.55)}
 @media (min-width:700px){body[data-room=study] .win{right:48px;top:-168px;width:176px;height:230px;border-radius:88px 88px 0 0}}
 body[data-room=study] .win::before,body[data-room=study] .win::after{display:none}
@@ -1251,6 +1257,7 @@ function applyWood(){
   const w = WOODS[wood] || WOODS.oak, st = document.documentElement.style;
   st.setProperty("--oak", w[1]); st.setProperty("--oak-dark", w[2]); st.setProperty("--oak-deep", w[3]); st.setProperty("--back", w[4]);
   st.setProperty("--hint", inkOn(w[4])==="#1c1a17" ? "rgba(40,32,24,.55)" : "rgba(239,230,214,.38)");
+  document.documentElement.dataset.wood = WOODS[wood] ? wood : "oak";
 }
 function decorSvg(t){ const d = DECOR[t]; return `<svg viewBox="0 0 ${d[1]} ${d[2]}" aria-hidden="true">${d[4]}</svg>`; }
 function decorH(d){ return Math.round(({s:54, m:76, l:104}[d.size] || 76) * DECOR[d.type][3] * (matchMedia("(max-width:640px)").matches ? .86 : 1)); }
