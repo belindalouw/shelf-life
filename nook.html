@@ -182,6 +182,32 @@ body { margin: 0; background: var(--night); color: var(--parchment); overflow: h
 .cover.sm { width: 64px; } .cover.xs { width: 44px; border-radius: 2px 4px 4px 2px; }
 .cover.xs .gen { padding: 4px; font-size: 7px; } .cover.xs .gen span { font-size: 6px; }
 .results { display: grid; gap: 8px; padding-bottom: 6px; }
+.results[hidden], #picked[hidden] { display: none; }
+.backres { min-height: 36px; padding: 0 12px; margin: 2px 0 4px; }
+/* choosing how a found book looks: its cover, its spine's style and colour */
+.found .pick { grid-column: 1 / -1; display: grid; gap: 4px; min-width: 0; }
+.plbl { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; font: 600 12px/1 var(--font-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.plbl small { font: italic 500 14px/1 var(--font-display); letter-spacing: 0; text-transform: none; }
+.strip { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; padding: 4px 2px 8px; scrollbar-width: thin; }
+.strip button { flex: none; padding: 0; border: 2px solid transparent; border-radius: 5px; background: rgba(239,227,204,.05); cursor: pointer; }
+.strip button[aria-checked="true"] { border-color: var(--ember); box-shadow: 0 0 0 3px rgba(233,184,114,.2); }
+.strip button:focus-visible, .swatches button:focus-visible, .swatches label:focus-within { outline: 2px solid var(--ember); outline-offset: 2px; }
+.covers { min-height: 84px; }
+.covers button { width: 54px; aspect-ratio: 2 / 3; overflow: hidden; }
+.covers img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.spines button { padding: 4px; }
+.spines canvas { display: block; height: 116px; width: auto; border-radius: 2px; box-shadow: 0 4px 10px rgba(0,0,0,.4); }
+.swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 2px 6px; }
+.swatches button, .swatches label { position: relative; width: 32px; height: 32px; box-sizing: border-box; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(239,227,204,.3); box-shadow: inset 0 0 0 2px rgba(0,0,0,.2); }
+.swatches [aria-checked="true"], .swatches .own.on { outline: 2px solid var(--ember); outline-offset: 2px; }
+.swatches .sep { width: 1px; height: 24px; margin: 0 2px; background: var(--hair); }
+.swatches .own { background: conic-gradient(#c0392b, #d4a373, #3a5a40, #1f4e5f, #5e3c58, #c0392b); }
+.lookbtn { min-height: 38px; }
+.bookcard .pick { display: grid; gap: 4px; padding-top: 4px; }
+.bookcard .pick[hidden] { display: none; }
+.bookcard.looking #bookbody { max-height: min(56dvh, 470px); overflow-y: auto; overscroll-behavior: contain; }
+.swatches input, .found .swatches input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0; opacity: 0; cursor: pointer; }
 .res { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 8px 8px 8px 10px; border-radius: 12px; background: rgba(239,227,204,.04); }
 .res b { display: block; font: italic 500 17px/1.15 var(--font-display); }
 .res .btn { min-height: 38px; padding: 0 14px; }
@@ -207,6 +233,13 @@ body { margin: 0; background: var(--night); color: var(--parchment); overflow: h
 .toast button { border: 0; background: none; color: var(--ember); font: 600 13px/1 var(--font-ui); letter-spacing: .12em; text-transform: uppercase; padding: 8px 6px; cursor: pointer; }
 .toast button[hidden] { display: none; }
 .note.pad0 { margin: 4px 2px 8px; }
+.note a { color: var(--ember); }
+.drop.pick { width: 100%; box-sizing: border-box; color: var(--parchment); font-family: var(--font-ui); }
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.alt { display: grid; gap: 10px; margin-top: 12px; }
+.alt[hidden], .alt [hidden] { display: none; }
+.pastebox { min-height: 64px; border-radius: 14px; border: 1.5px dashed rgba(233,184,114,.45); background: rgba(10,6,4,.5); outline: none; caret-color: transparent; }
+.pastebox:empty::before { content: "Long-press here and choose Paste"; display: block; padding: 20px 14px; text-align: center; font: italic 500 15px/1.3 var(--font-display); color: var(--muted); }
 .klist { display: grid; gap: 6px; }
 .krow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(239,227,204,.04); }
 .krow.have { opacity: .55; }
@@ -660,7 +693,7 @@ let shelved = [], bookMeshes = [], plates = null;
 const shelfLight = await loadTex(file("shelf_light.webp"), true); shelfLight.flipY = true; shelfLight.needsUpdate = true;
 const PAGE = new THREE.Color("#e6d8b8");
 await Promise.race([document.fonts.load('600 40px "Cormorant Garamond"'), new Promise(r => setTimeout(r, 1500))]).catch(() => {});
-const AW = 2048, AH = 2048, CELL_H = 512;
+const AW = 2048, AH = 2048, CELL_H = 512, SPINE_STYLES = [0, 1, 2];
 function drawSpine(g, x, y, w, h, b) {
   const col = colorOf(b), ink = b.ink || inkOn(col), hh = hash(b.title + "spine"), gilt = "#d6b26a";
   g.fillStyle = col; g.fillRect(x, y, w, h);
@@ -668,7 +701,7 @@ function drawSpine(g, x, y, w, h, b) {
   const gr = g.createLinearGradient(x, 0, x + w, 0);
   gr.addColorStop(0, "rgba(0,0,0,.32)"); gr.addColorStop(.25, "rgba(255,255,255,.05)"); gr.addColorStop(.6, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.35)");
   g.fillStyle = gr; g.fillRect(x, y, w, h);
-  const style = hh % 3, dark = ink !== "#1c1a17";
+  const style = SPINE_STYLES.includes(b.spineStyle) ? b.spineStyle : hh % 3, dark = ink !== "#1c1a17";   // 0 gilt bands, 1 title label, 2 plain
   const accent = style === 2 ? ink : (dark ? gilt : "#3a2a1a");
   if (style !== 2) { g.fillStyle = accent; for (const yy of [0.07, 0.085, 0.915, 0.93]) g.fillRect(x + 2, y + h*yy, w - 4, Math.max(2, h*0.006)); }
   if (style === 1 && w > 34) {                           // a dark title label with a gilt edge
@@ -918,8 +951,35 @@ function renderCard() {
     ${meta ? `<div class="meta">${meta}</div>` : ""}
     ${(b.themes || []).length ? `<div class="themes">${b.themes.slice(0, 4).map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
   </div></div>
-  <div class="cardctl">${statusSeg(b.shelf)}</div>
+  <div class="cardctl">${statusSeg(b.shelf)}
+    <button type="button" class="btn wide lookbtn" id="lookBtn" aria-expanded="false" aria-controls="cardLook">Change cover and spine</button>
+    <div class="pick" id="cardLook" hidden></div></div>
   <div class="cardfoot"><button type="button" class="x" id="rmBook">Remove from library</button></div>`;
+  bookcard.classList.remove("looking");
+  if (lookOpenFor === b.id) toggleLook(true);
+}
+// the cover and spine picker on a book already shelved: each choice is saved and the spine redrawn where it stands
+let lookOpenFor = null, lookT = 0;
+function toggleLook(open) {
+  const b = openBook.b, el = $("cardLook"), btn = $("lookBtn");
+  lookOpenFor = open ? b.id : null;
+  el.hidden = !open; btn.setAttribute("aria-expanded", open); btn.textContent = open ? "Done choosing" : "Change cover and spine";
+  bookcard.classList.toggle("looking", open);
+  if (open && !el.picker) el.picker = lookPicker(el, b, { onShelf: true, base: () => openBook.b, onChange: () => {
+    if (!el.picker || !openBook) return;
+    const p = el.picker.book(), now = openBook.b;
+    Object.assign(now, { cover: p.cover, color: p.color, ink: p.ink, spineStyle: p.spineStyle }); saveLib();
+    $("bookbody").querySelector(".bk .cover").innerHTML = coverHtml(now);
+    clearTimeout(lookT); lookT = setTimeout(() => respine(now.id), 180);
+  } });
+  bookView(openBook);                                    // the card changed height: frame the book again above it
+}
+// rebuild the shelves so a new spine shows, keeping the open book out without redrawing its card
+function respine(id) {
+  if (!openBook || openBook.b.id !== id) return;
+  buildShelves();
+  const s = shelved.find(o => o.b.id === id); if (!s) return;
+  openBook = s; s.tOut = 1; s.out = 1; s.moved = true;
 }
 function showBook(s, instant) {
   if (openBook && openBook !== s) openBook.tOut = 0;
@@ -930,7 +990,7 @@ function showBook(s, instant) {
 }
 function closeBook(quiet) {
   if (!openBook) return;
-  openBook.tOut = 0; openBook = null; bookcard.classList.remove("open");
+  openBook.tOut = 0; openBook = null; bookcard.classList.remove("open", "looking"); lookOpenFor = null; clearTimeout(lookT);
   if (!quiet && mode === "shelf") shelfView(bay);
   syncNudges();
 }
@@ -952,6 +1012,8 @@ $("bookbody").addEventListener("click", e => {
   } else if (star) {
     const n = +star.dataset.star; b.myRating = (+b.myRating === n) ? 0 : n;
     saveLib(); rebuildKeep(b.id);
+  } else if (e.target.id === "lookBtn") {
+    toggleLook(lookOpenFor !== b.id);
   } else if (e.target.id === "rmBook") {
     const i = library.indexOf(b); if (i < 0) return;
     library.splice(i, 1); saveLib(); closeBook(true); buildShelves(); shelfView(bay);
@@ -1171,7 +1233,7 @@ async function searchBooks(q, limit = 12) {
   try {
     const docs = (await getJSON(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limit}&fields=key,title,author_name,first_publish_year,number_of_pages_median,cover_i,isbn,subject`)).docs || [];
     netDown = false;
-    return docs.filter(d => d.title).map(d => ({ id: "ol" + String(d.key).replace(/\W/g, ""), isbn: (d.isbn || []).find(i => /^97[89]\d{10}$/.test(i)) || "",
+    return docs.filter(d => d.title).map(d => ({ id: "ol" + String(d.key).replace(/\W/g, ""), work: d.key, isbn: (d.isbn || []).find(i => /^97[89]\d{10}$/.test(i)) || "",
       title: d.title, author: (d.author_name || []).slice(0, 2).join(", ") || "Unknown author", pages: d.number_of_pages_median || 0, year: d.first_publish_year || "",
       themes: cleanThemes(d.subject).slice(0, 6), cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "" }));
   } catch (e) {
@@ -1185,6 +1247,8 @@ function makeBook(info, shelf = "to-read") {
   const b = { id: "", isbn: info.isbn || "", title: String(info.title).trim(), author: String(info.author || "Unknown author").trim(), pages: +info.pages || 0,
     year: info.year || "", myRating: 0, avgRating: 0, shelf, themes: info.themes || [], notes: "", dateAdded: today(), dateRead: shelf === "read" ? today() : "",
     cover: info.cover || "", color: info.color || "", themesTried: true };
+  if (info.ink) b.ink = info.ink;
+  if (SPINE_STYLES.includes(info.spineStyle)) b.spineStyle = info.spineStyle;
   b.id = b.isbn ? "b" + b.isbn : newId(b);
   return b;
 }
@@ -1203,16 +1267,152 @@ function addBook(b, { stay } = {}) {
 // a found book, ready to add: title and author can be corrected, and the status chosen
 function foundCard(box, info, { stay, note } = {}) {
   let shelf = "to-read";
-  box.innerHTML = `<div class="found"><div class="cover sm">${coverHtml({ ...info, author: info.author || "" })}</div><div class="fb">
+  box.innerHTML = `<div class="found"><div class="cover sm"></div><div class="fb">
       <input class="ft" value="${esc(info.title)}" aria-label="Title" autocomplete="off"><input class="fa" value="${esc(info.author)}" aria-label="Author" autocomplete="off">
       <small>${[info.year, info.pages && info.pages + " pages", info.isbn && "ISBN " + info.isbn].filter(Boolean).map(esc).join(" · ")}${note ? `<em>${esc(note)}</em>` : ""}</small></div>
+    <div class="pick"></div>
     ${statusSeg(shelf)}<button class="btn primary wide" type="button">Add to shelf</button></div>`;
+  const q = s => box.querySelector(s), named = () => ({ ...info, title: q(".ft").value.trim() || info.title, author: q(".fa").value.trim() });
+  const drawCover = () => { q(".cover").innerHTML = coverHtml(picker.book()); };
+  const picker = lookPicker(q(".pick"), info, { base: named, onChange: drawCover });
+  drawCover();
+  for (const s of [".ft", ".fa"]) q(s).addEventListener("change", () => { picker.redraw(); drawCover(); });
   box.querySelector(".seg").addEventListener("click", e => { const b = e.target.closest("[data-status]"); if (!b) return;
     shelf = b.dataset.status; for (const x of box.querySelectorAll("[data-status]")) x.setAttribute("aria-pressed", x === b); });
-  box.querySelector(".btn").addEventListener("click", () => {
-    const title = box.querySelector(".ft").value.trim(); if (!title) return box.querySelector(".ft").focus();
-    const ok = addBook(makeBook({ ...info, title, author: box.querySelector(".fa").value.trim() }, shelf), { stay });
+  q(".btn.primary").addEventListener("click", () => {
+    const title = q(".ft").value.trim(); if (!title) return q(".ft").focus();
+    const ok = addBook(makeBook(picker.book(), shelf), { stay });
     if (stay && ok) box.innerHTML = "";
+  });
+}
+// Choosing how a book looks: its cover from any edition, and its spine's style and colour.
+// base() gives the book as it stands; book() gives it with the choices made here. For a book still being added, the spine
+// takes the cover's colour until a colour is picked; a book already on the shelf keeps its colour until you change the cover.
+let pickN = 0;
+const MAX_COVERS = 6;
+function lookPicker(root, info, { base = () => info, onChange = () => {}, onShelf = false } = {}) {
+  const n = ++pickN, look = {
+    cover: info.cover || (info.isbn ? `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(info.isbn)}-M.jpg?default=false` : ""),
+    color: colorOf(info), ink: info.ink || "", ownColour: !!info.color && !onShelf,
+    spineStyle: SPINE_STYLES.includes(info.spineStyle) ? info.spineStyle : hash(info.title + "spine") % 3, covers: [], palette: [] };
+  root.innerHTML = `<div class="plbl" id="covLbl${n}">Cover <small>finding other editions…</small></div>
+    <div class="strip covers" role="radiogroup" aria-labelledby="covLbl${n}"></div>
+    <div class="plbl" id="spLbl${n}">Spine</div>
+    <div class="strip spines" role="radiogroup" aria-labelledby="spLbl${n}"></div>
+    <div class="swatches" role="radiogroup" aria-label="Spine colour"></div>`;
+  const q = s => root.querySelector(s), qa = s => root.querySelectorAll(s);
+  let spare = [];                                        // covers found beyond the six shown, kept to stand in for broken ones
+  const book = () => ({ ...base(), cover: look.cover, color: look.color, ink: look.ink || inkOn(look.color), spineStyle: look.spineStyle });
+
+  const drawCovers = () => {
+    q(".covers").innerHTML = look.covers.map((u, i) => `<button type="button" role="radio" aria-checked="${u === look.cover}" aria-label="Cover ${i + 1} of ${look.covers.length}" data-cover="${esc(u)}">
+      <img alt="" src="${esc(u)}" loading="lazy"></button>`).join("");
+    for (const img of qa(".covers img"))                  // a missing or blank cover is dropped from the choices
+      img.addEventListener("error", () => dropCover(img)), img.addEventListener("load", () => { if (img.naturalWidth < 20) dropCover(img); });
+  };
+  // a missing or blank cover is dropped, and the next one found takes its place, so up to six real covers show
+  const dropCover = img => { const btn = img.parentNode, u = btn.dataset.cover; look.covers = look.covers.filter(x => x !== u);
+    const next = spare.shift();
+    if (next) { look.covers.push(next); btn.dataset.cover = next; btn.setAttribute("aria-checked", false); img.src = next; }
+    else btn.remove();
+    countCovers();
+    if (u === look.cover && look.covers.length) chooseCover(look.covers[0], true); };
+  const countCovers = () => { q(".plbl small").textContent = look.covers.length ? "" : "none found"; };
+  const drawSpines = () => {
+    const b = book(), d = dims(b), w = clamp(Math.round(CELL_H*d.t/d.h0), 96, 220);
+    q(".spines").innerHTML = SPINE_STYLES.map(s => `<button type="button" role="radio" aria-checked="${s === look.spineStyle}" data-style="${s}"
+      aria-label="${["Gilt bands", "Title label", "Plain"][s]}"><canvas></canvas></button>`).join("");
+    qa(".spines canvas").forEach((c, s) => { c.width = w; c.height = CELL_H; drawSpine(c.getContext("2d"), 0, 0, w, CELL_H, { ...b, spineStyle: s }); });
+  };
+  const drawSwatches = () => {
+    const sw = (c, from) => `<button type="button" role="radio" aria-checked="${c === look.color}" data-color="${c}" style="background:${c}"
+      aria-label="${from ? "Colour from the cover" : "Cloth colour"} ${c}"></button>`;
+    const own = !look.palette.includes(look.color) && !CLOTH.includes(look.color);
+    q(".swatches").innerHTML = look.palette.map(c => sw(c, true)).join("") + (look.palette.length ? `<i class="sep"></i>` : "")
+      + CLOTH.map(c => sw(c)).join("")
+      + `<label class="own${own ? " on" : ""}" title="Any colour"${own ? ` style="background:${look.color}"` : ""}><input type="color" value="${look.color}" aria-label="Any spine colour"></label>`;
+  };
+  // quiet: shown without being chosen by hand, so a book on the shelf keeps its spine colour
+  const chooseCover = async (u, quiet) => {
+    const changed = u !== look.cover; look.cover = u;
+    for (const x of qa("[data-cover]")) x.setAttribute("aria-checked", x.dataset.cover === u);
+    if (changed) onChange();
+    const pal = await coverPalette(u); if (look.cover !== u) return;
+    look.palette = pal;
+    const follow = !look.ownColour && !(onShelf && quiet);
+    if (follow && pal.length && pal[0] !== look.color) { look.color = pal[0]; look.ink = ""; drawSpines(); onChange(); }
+    drawSwatches();
+  };
+  const chooseColour = (c, own) => { look.color = c; look.ink = ""; look.ownColour = true; drawSpines(); onChange();
+    if (own) { const l = q(".own"); l.classList.add("on"); l.style.background = c; for (const x of qa("[data-color]")) x.setAttribute("aria-checked", false); }
+    else drawSwatches(); };
+
+  drawSpines(); drawSwatches();
+  if (look.cover) { look.covers = [look.cover]; drawCovers(); chooseCover(look.cover, true); }
+  coverChoices(info).then(list => {
+    if (!root.isConnected) return;
+    look.covers = [...new Set([...look.covers, ...list])]; spare = look.covers.splice(MAX_COVERS); drawCovers(); countCovers();
+    if (!look.cover && look.covers.length) chooseCover(look.covers[0], onShelf);
+  });
+
+  q(".covers").addEventListener("click", e => { const b = e.target.closest("[data-cover]"); if (b) chooseCover(b.dataset.cover); });
+  q(".spines").addEventListener("click", e => { const b = e.target.closest("[data-style]"); if (!b) return;
+    look.spineStyle = +b.dataset.style; for (const x of qa("[data-style]")) x.setAttribute("aria-checked", x === b); onChange(); });
+  q(".swatches").addEventListener("click", e => { const b = e.target.closest("[data-color]"); if (b) chooseColour(b.dataset.color); });
+  q(".swatches").addEventListener("input", e => { if (e.target.type === "color") chooseColour(e.target.value, true); });
+  return { book, redraw: drawSpines };
+}
+// every cover we can find for a book: each Open Library edition's, then Google Books' (remembered, so reopening is instant)
+const olCover = id => `https://covers.openlibrary.org/b/id/${id}-M.jpg`, coverMemo = new Map();
+function coverChoices(info) {
+  const k = [info.work, info.isbn, info.title, info.author].join("|");
+  if (!coverMemo.has(k)) coverMemo.set(k, findCovers(info));
+  return coverMemo.get(k);
+}
+async function findCovers(info) {
+  const ol = [], gb = [], norm = s => String(s || "").toLowerCase().replace(/\(.*?\)|[^a-z0-9]/g, "");
+  const fromOL = async () => {
+    let work = info.work;
+    if (!work && info.isbn) { const e = await getJSON(`https://openlibrary.org/isbn/${encodeURIComponent(info.isbn)}.json`);
+      (e.covers || []).filter(c => c > 0).forEach(c => ol.push(olCover(c))); work = e.works?.[0]?.key; }
+    if (!work) work = ((await getJSON(`https://openlibrary.org/search.json?title=${encodeURIComponent(info.title)}&author=${encodeURIComponent(info.author || "")}&limit=1&fields=key`)).docs || [])[0]?.key;
+    if (!/^\/works\/OL\d+W$/.test(work || "")) return;
+    const d = await getJSON(`https://openlibrary.org${work}/editions.json?limit=100`);
+    for (const e of d.entries || []) for (const c of e.covers || []) if (c > 0) ol.push(olCover(c));
+  };
+  const fromGoogle = async () => {
+    const surname = (info.author || "").split(",")[0].trim().split(/\s+/).pop();
+    const d = await getJSON(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`intitle:${info.title}` + (surname ? ` inauthor:${surname}` : ""))}&maxResults=20&printType=books`);
+    const want = norm(info.title);
+    for (const v of d.items || []) { const i = v.volumeInfo || {}, t = norm(i.title), u = (i.imageLinks || {}).thumbnail;
+      if (u && t && (t.includes(want) || want.includes(t))) gb.push(u.replace(/^http:/, "https:").replace(/&edge=curl/, "")); }
+  };
+  await Promise.allSettled([fromOL(), fromGoogle()]);
+  return [...new Set([...ol, ...gb])];
+}
+// the cover's main colours, deepened a little as cloth on a spine; covers that won't share their pixels give none
+function coverPalette(url) {
+  if (!url) return Promise.resolve([]);
+  return new Promise(done => {
+    const img = new Image(); if (!url.startsWith("data:")) img.crossOrigin = "anonymous";
+    img.onerror = () => done([]);
+    img.onload = () => { try {
+      const W = 24, H = 36, c = document.createElement("canvas"); c.width = W; c.height = H;
+      const g = c.getContext("2d", { willReadFrequently: true }); g.drawImage(img, 0, 0, W, H);
+      const d = g.getImageData(0, 0, W, H).data, bins = new Map();
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = (y*W + x)*4, k = (d[i] >> 5) << 6 | (d[i+1] >> 5) << 3 | (d[i+2] >> 5), wt = (x < 3 || x >= W - 3) ? 3 : 1;   // a spine carries the colour at the cover's edge
+        const v = bins.get(k) || [0, 0, 0, 0]; v[0] += d[i]*wt; v[1] += d[i+1]*wt; v[2] += d[i+2]*wt; v[3] += wt; bins.set(k, v);
+      }
+      const out = [];
+      for (const [r, gg, b, n] of [...bins.values()].sort((a, b) => b[3] - a[3])) {
+        const rgb = [r/n, gg/n, b/n].map(v => v*0.88);
+        if (out.some(o => Math.hypot(o[0] - rgb[0], o[1] - rgb[1], o[2] - rgb[2]) < 56)) continue;
+        out.push(rgb); if (out.length === 4) break;
+      }
+      done(out.map(o => "#" + o.map(v => Math.round(v).toString(16).padStart(2, "0")).join("")));
+    } catch (e) { done([]); } };
+    img.src = url;
   });
 }
 
@@ -1236,19 +1436,16 @@ const ADD = {
     <p class="status" id="scanStatus">Starting the camera…</p><div id="foundBox"></div>
     <label class="btn wide"><input type="file" accept="image/*" capture="environment" id="barPhoto" hidden>Take a photo of the barcode instead</label>
     <form class="inline" id="isbnForm"><input id="isbnIn" inputmode="numeric" placeholder="Or type the ISBN" aria-label="ISBN" autocomplete="off"><button class="btn">Look up</button></form>`],
-  cover: ["Photograph the cover", () => `<label class="drop"><input type="file" accept="image/*" capture="environment" id="coverPhoto" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON.cover}</svg>
-      <b>Take a photo of the front cover</b><small>Straight on, in good light, with the title readable</small></label>
+  cover: ["Photograph the cover", () => `<div id="coverPick"></div>
     <div class="snap" id="snap"></div><p class="status" id="coverStatus"></p><div id="foundBox"></div>`],
   search: ["Search", () => `<form class="inline" id="searchForm"><input id="searchIn" type="search" placeholder="Title, author or both" enterkeyhint="search" aria-label="Search for a book" autocomplete="off"><button class="btn">Search</button></form>
-    <p class="status" id="searchStatus"></p><div class="results" id="results"></div>`],
+    <p class="status" id="searchStatus"></p><div class="results" id="results"></div>
+    <div id="picked" hidden><button class="btn backres" type="button" id="backRes">← All results</button><div id="foundBox"></div></div>`],
   manual: ["Type it in", () => `<form class="form" id="manualForm">
     <label>Title<input name="title" required autocomplete="off"></label><label>Author<input name="author" autocomplete="off"></label>
     <div class="two"><label>Pages<input name="pages" inputmode="numeric" autocomplete="off"></label><label>Year<input name="year" inputmode="numeric" autocomplete="off"></label></div>
     ${statusSeg("to-read")}<button class="btn primary wide">Put it on the shelf</button></form>`],
-  kindle: ["From your Kindle", () => `<label class="drop"><input type="file" accept="image/*" multiple id="kindlePhotos" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON.kindle}</svg>
-      <b>Add photos or screenshots</b><small>Of your library on your Kindle or in the Kindle app. List view reads best; add several to cover a long library.</small></label>
+  kindle: ["From your Kindle", () => `<div id="kindlePick"></div>
     <p class="status" id="kindleStatus"></p><div id="kindleList"></div>`],
   import: ["Import a library", () => `<div class="steps">
       <h4>Goodreads</h4><p>On goodreads.com open <b>My Books</b>, then <b>Import and export</b> (under Tools), then <b>Export Library</b>. Save the file it makes.</p>
@@ -1323,7 +1520,7 @@ async function wireScan() {
   }
 }
 function stopScan() {
-  scanLoop++;
+  scanLoop++; stopPickerCam();
   if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
   if (scanReader) { try { scanReader.reset(); } catch (e) {} scanReader = null; }
 }
@@ -1340,6 +1537,74 @@ async function gotCode(raw, live) {
   if (!info) { say("scanStatus", netDown ? "Couldn't reach the book catalogues. Check your connection, or type the book in." : `No details found for ISBN ${isbn}. Try Search instead.`, true); return; }
   say("scanStatus", "Add it, then scan the next one.");
   foundCard($("foundBox"), { ...info, isbn }, { stay: true, note: info.guess ? " · from Claude, check these" : "" });
+}
+
+// ---- choosing photos. Some in-app views (the Claude app on Android among them) can't open the phone's photo picker
+// from a page, so a tap on a file input does nothing. If the picker doesn't open, the page offers its own camera and a
+// place to paste a screenshot, and (in an app view) a link to open the page in the phone's browser instead.
+const ARTIFACT_URL = "https://claude.ai/artifact/VkCT2SeGfhYWFcsE49MTLY";
+const inAppView = /; wv\)/.test(navigator.userAgent) && !/github\.io$/.test(location.hostname);
+let pickerStream = null;
+function stopPickerCam() { if (pickerStream) { pickerStream.getTracks().forEach(t => t.stop()); pickerStream = null; } }
+function photoPicker(box, { multiple, title, sub, icon, onImages }) {
+  box.innerHTML = `<button type="button" class="drop pick">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>
+      <b>${title}</b><small>${sub}</small></button>
+    <input type="file" accept="image/*"${multiple ? " multiple" : ""} class="vh" tabindex="-1" aria-hidden="true">
+    <div class="alt" hidden>
+      <p class="note pad0 why"></p>
+      <div class="two"><button type="button" class="btn" data-a="cam">Use the camera</button><button type="button" class="btn" data-a="paste">Paste a screenshot</button></div>
+      <div class="cam" hidden><video playsinline muted></video></div>
+      <div class="two camctl" hidden><button type="button" class="btn primary" data-a="snap">Take photo</button><button type="button" class="btn" data-a="stop">Done</button></div>
+      <div class="pastebox" contenteditable="true" hidden role="textbox" aria-label="Paste a screenshot here"></div>
+      ${inAppView ? `<p class="note pad0">Or <a href="${ARTIFACT_URL}" target="_blank" rel="noopener">open this page in Chrome</a>, where choosing photos works normally.</p>` : ""}
+    </div>`;
+  const q = sel => box.querySelector(sel), input = q("input"), alt = q(".alt"), video = q("video"), paste = q(".pastebox");
+  const showAlt = why => { alt.hidden = false; q(".why").textContent = why; if (mode === "shelf" && panel === "add") shelfView(bay); };
+  if (inAppView) showAlt("If tapping above doesn't open your photos, use the camera here or paste a screenshot.");
+  q(".pick").addEventListener("click", () => {
+    let opened = false; const mark = () => { opened = true; };
+    addEventListener("blur", mark); document.addEventListener("visibilitychange", mark);
+    input.click();
+    setTimeout(() => { removeEventListener("blur", mark); document.removeEventListener("visibilitychange", mark);
+      if (!opened && alt.hidden) showAlt("Your photos didn't open from here. Use the camera instead, or paste a screenshot."); }, 1500);
+  });
+  input.addEventListener("change", () => { const f = [...input.files]; input.value = ""; if (f.length) onImages(f); });
+  alt.addEventListener("click", async e => {
+    const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
+    if (a === "cam") {
+      paste.hidden = true;
+      try {
+        stopPickerCam();
+        pickerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1440 } } });
+        video.srcObject = pickerStream; await video.play();
+        q(".cam").hidden = false; q(".camctl").hidden = false; q(".why").textContent = "Fill the frame with the screen, then take the photo.";
+      } catch (err) { q(".why").textContent = "The camera can't be opened here either. Paste a screenshot instead" + (inAppView ? ", or open the page in Chrome." : "."); }
+    } else if (a === "snap") {
+      if (!video.videoWidth) return;
+      const c = document.createElement("canvas"); c.width = video.videoWidth; c.height = video.videoHeight; c.getContext("2d").drawImage(video, 0, 0);
+      const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9)); navigator.vibrate?.(15);
+      q(".cam").animate?.([{ opacity: .3 }, { opacity: 1 }], 250);
+      if (!multiple) { stopPickerCam(); q(".cam").hidden = true; q(".camctl").hidden = true; }
+      onImages([blob]);
+    } else if (a === "stop") { stopPickerCam(); q(".cam").hidden = true; q(".camctl").hidden = true; }
+    else if (a === "paste") {
+      stopPickerCam(); q(".cam").hidden = true; q(".camctl").hidden = true;
+      try {                                               // straight from the clipboard, where the view allows it
+        for (const item of await navigator.clipboard.read()) {
+          const t = item.types.find(t => t.startsWith("image/")); if (t) return onImages([await item.getType(t)]);
+        }
+      } catch (err) {}
+      paste.hidden = false; paste.focus();
+      q(".why").textContent = "Take a screenshot, tap Copy, then long-press the box below and choose Paste.";
+    }
+  });
+  paste.addEventListener("paste", e => {
+    e.preventDefault();
+    const files = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith("image/")).map(i => i.getAsFile()).filter(Boolean);
+    if (files.length) { paste.hidden = true; onImages(files); } else q(".why").textContent = "That wasn't a picture. Copy the screenshot itself, then paste it here.";
+  });
+  paste.addEventListener("input", () => { paste.textContent = ""; });
 }
 
 // cover photo: Claude reads the title and author, Open Library finds the edition; the photo gives the spine its colour
@@ -1360,8 +1625,8 @@ function coverColour(c) {                               // the cover's main clot
   return "#" + h(r) + h(gg) + h(b);
 }
 function wireCover() {
-  $("coverPhoto").addEventListener("change", async e => {
-    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  photoPicker($("coverPick"), { multiple: false, icon: ICON.cover, title: "Take a photo of the front cover",
+    sub: "Straight on, in good light, with the title readable", onImages: async ([f]) => {
     $("foundBox").innerHTML = "";
     let shot; try { shot = await shrink(f, 1024); } catch (err) { return say("coverStatus", "That photo couldn't be opened.", true); }
     const thumb = await shrink(f, 240).catch(() => null);
@@ -1379,7 +1644,7 @@ function wireCover() {
     try { info.color = coverColour(shot.canvas); } catch (err) {}
     say("coverStatus", match ? "" : "Couldn't find the edition, so the details are what's on the cover.");
     foundCard($("foundBox"), info);
-  });
+  } });
 }
 
 function wireSearch() {
@@ -1387,15 +1652,20 @@ function wireSearch() {
   let found = [];
   $("searchForm").addEventListener("submit", async e => {
     e.preventDefault(); const q = inp.value.trim(); if (!q) return; inp.blur();
-    say("searchStatus", "Searching…"); $("results").innerHTML = "";
+    say("searchStatus", "Searching…"); $("results").innerHTML = ""; showResults();
     try { found = await searchBooks(q); }
     catch (err) { return say("searchStatus", "The search couldn't reach Open Library. Check your connection and try again.", true); }
     say("searchStatus", !found.length ? "No books found. Try fewer words, or just the author's surname." : found[0].guess ? "Open Library couldn't be reached, so these are Claude's suggestions." : "");
     $("results").innerHTML = found.map((b, i) => { const have = library.some(x => sameBook(x, b));
       return `<div class="res"><div class="cover xs">${coverHtml(b)}</div><div><b>${esc(b.title)}</b><small>${esc(b.author)}${b.year ? " · " + esc(b.year) : ""}</small></div>
-        <button class="btn" type="button" data-add="${i}"${have ? " disabled" : ""}>${have ? "On shelf" : "Add"}</button></div>`; }).join("");
+        <button class="btn" type="button" data-add="${i}"${have ? " disabled" : ""}>${have ? "On shelf" : "Choose"}</button></div>`; }).join("");
   });
-  $("results").addEventListener("click", e => { const i = e.target.closest("[data-add]")?.dataset.add; if (i !== undefined) addBook(makeBook(found[+i])); });
+  // a chosen result opens on its own, with its covers and spines to pick from
+  const showResults = () => { $("picked").hidden = true; $("foundBox").innerHTML = ""; $("results").hidden = false; };
+  $("results").addEventListener("click", e => { const i = e.target.closest("[data-add]")?.dataset.add; if (i === undefined) return;
+    $("results").hidden = true; $("picked").hidden = false; foundCard($("foundBox"), found[+i]);
+    $("picked").scrollIntoView({ block: "start" }); });
+  $("backRes").addEventListener("click", showResults);
 }
 
 function wireManual() {
@@ -1510,8 +1780,8 @@ function wireKindle() {
     toast(`Added ${added.length === 1 ? "1 book" : added.length + " books"} from your Kindle.`);
     enrich(added);
   });
-  $("kindlePhotos").addEventListener("change", async e => {
-    const files = [...e.target.files]; e.target.value = ""; if (!files.length) return;
+  photoPicker($("kindlePick"), { multiple: true, icon: ICON.kindle, title: "Add photos or screenshots",
+    sub: "Of your library on your Kindle or in the Kindle app. List view reads best; add several to cover a long library.", onImages: async files => {
     let fresh = 0, failed = 0;
     for (const [i, f] of files.entries()) {
       say("kindleStatus", `Reading ${files.length > 1 ? `photo ${i + 1} of ${files.length}` : "your photo"}\u2026 this can take up to a minute.`);
@@ -1531,7 +1801,7 @@ function wireKindle() {
     const n = found.length;
     say("kindleStatus", !n ? "No books found. Try a sharper photo of the library screen, or a screenshot." :
       `Found ${fresh === 1 ? "1 new book" : fresh + " new books"}${failed ? `; ${failed === 1 ? "one photo" : failed + " photos"} couldn't be read` : ""}. Add more photos to keep going.`, !n);
-  });
+  } });
 }
 // fill in covers, pages, years and ISBNs for books that came in with only a title and author
 async function enrich(books) {
