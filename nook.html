@@ -719,7 +719,53 @@ function pic(url, onReady) {
 const picReady = url => new Promise(r => { if (!url || pic(url, () => r()) || pics.get(url).failed) r(); setTimeout(r, 4000); });
 const coverSrc = b => b.cover || (b.isbn ? `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(b.isbn)}-M.jpg?default=false` : "");
 const PHOTO = 3;                                         // spine style: the reader's own photo of the spine
+const WRAP = 4;                                          // spine style: the front cover's artwork carried round onto the spine
+const isStyle = st => SPINE_STYLES.includes(st) || st === WRAP;
+// a book imported without a spine of its own takes its cover's; books given a cloth spine keep it
+const styleOf = b => isStyle(b.spineStyle) || b.spineStyle === PHOTO ? b.spineStyle : coverSrc(b) ? WRAP : hash(b.title + "spine") % 3;
+// the colour along the cover's spine edge, to pick ink that reads on it (remembered per picture)
+const edgeTone = new Map();
+function edgeInk(img, src, sw) {
+  if (edgeTone.has(src)) return edgeTone.get(src);
+  let ink = "#f3ead8";
+  try { const c = document.createElement("canvas"); c.width = 4; c.height = 24; const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, 0, 0, sw, img.naturalHeight, 0, 0, 4, 24);
+    const d = g.getImageData(0, 0, 4, 24).data; let r = 0, gg = 0, bb = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i+1]; bb += d[i+2]; }
+    const n = d.length/4, hex = "#" + [r, gg, bb].map(v => Math.round(v/n).toString(16).padStart(2, "0")).join("");
+    ink = inkOn(hex); } catch (e) {}
+  edgeTone.set(src, ink); return ink;
+}
 function drawSpine(g, x, y, w, h, b) {
+  const st = styleOf(b), wrapImg = st === WRAP && pic(coverSrc(b));
+  if (wrapImg) {
+    // the cover's binding edge, reflected across the fold so the art runs on round the corner. Only a thin strip, stretched
+    // and softened, so lettering at the cover's edge doesn't come out backwards. The atlas cell's right edge meets the cover.
+    const iw = wrapImg.naturalWidth, ih = wrapImg.naturalHeight, sw = Math.max(2, Math.min(iw*0.06, iw*(w/h)*0.5));
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+    g.translate(x + w, y); g.scale(-1, 1);
+    if ("filter" in g) g.filter = `blur(${Math.max(1, w/40)}px)`;
+    g.drawImage(wrapImg, 0, 0, sw, ih, -2, -2, w + 4, h + 4);
+    g.filter = "none"; g.restore();
+    const gr = g.createLinearGradient(x, 0, x + w, 0);   // the rounded spine catching the light
+    gr.addColorStop(0, "rgba(0,0,0,.30)"); gr.addColorStop(.3, "rgba(255,255,255,.06)"); gr.addColorStop(.7, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.28)");
+    g.fillStyle = gr; g.fillRect(x, y, w, h);
+    const ink = edgeInk(wrapImg, coverSrc(b), sw), shade = ink === "#1c1a17" ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.55)";
+    g.save(); g.translate(x + w/2, y + h*0.08); g.rotate(Math.PI/2);
+    const title = b.title.replace(/\s*\(.*?\)\s*$/, ""), avail = h*0.66;
+    let fs = Math.min(w*0.52, 42); g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`;
+    while (g.measureText(title).width > avail && fs > Math.min(w*0.40, 28)) { fs -= 1; g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`; }
+    let tt = title;
+    if (g.measureText(tt).width > avail) { let n = title.length; while (n > 3 && g.measureText(title.slice(0, n).trimEnd() + "…").width > avail) n--; tt = title.slice(0, n).trimEnd() + "…"; }
+    g.textBaseline = "middle"; g.shadowColor = shade; g.shadowBlur = Math.max(2, fs*0.18); g.fillStyle = ink; g.fillText(tt, 0, 1);
+    g.restore();
+    const last = (b.author || "").split(/\s+/).pop() || "";
+    if (last && w > 22) {
+      g.save(); g.translate(x + w/2, y + h*0.93); g.rotate(Math.PI/2);
+      g.font = `600 ${Math.min(w*0.34, 20)}px "Cormorant Garamond", Georgia, serif`; g.textAlign = "right"; g.textBaseline = "middle";
+      g.shadowColor = shade; g.shadowBlur = 3; g.fillStyle = ink; g.globalAlpha = .9; g.fillText(last.toUpperCase(), 0, 0); g.restore();
+    }
+    return;
+  }
   const col = colorOf(b), ink = b.ink || inkOn(col), hh = hash(b.title + "spine"), gilt = "#d6b26a";
   const photo = b.spineStyle === PHOTO && pic(b.spineImg);
   if (photo) {                                           // a photographed spine, with the same soft rounding at its edges
@@ -734,7 +780,7 @@ function drawSpine(g, x, y, w, h, b) {
   const gr = g.createLinearGradient(x, 0, x + w, 0);
   gr.addColorStop(0, "rgba(0,0,0,.32)"); gr.addColorStop(.25, "rgba(255,255,255,.05)"); gr.addColorStop(.6, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.35)");
   g.fillStyle = gr; g.fillRect(x, y, w, h);
-  const style = SPINE_STYLES.includes(b.spineStyle) ? b.spineStyle : hh % 3, dark = ink !== "#1c1a17";   // 0 gilt bands, 1 title label, 2 plain
+  const style = SPINE_STYLES.includes(st) ? st : hh % 3, dark = ink !== "#1c1a17";   // 0 gilt bands, 1 title label, 2 plain (also while a cover spine's picture loads)
   const accent = style === 2 ? ink : (dark ? gilt : "#3a2a1a");
   if (style !== 2) { g.fillStyle = accent; for (const yy of [0.07, 0.085, 0.915, 0.93]) g.fillRect(x + 2, y + h*yy, w - 4, Math.max(2, h*0.006)); }
   if (style === 1 && w > 34) {                           // a dark title label with a gilt edge
@@ -835,18 +881,19 @@ function buildShelves() {
     s.ccell = null;
     const src = coverSrc(s.b);
     if (src) {
-      const a = at, cx = at.kx, cy = at.ky;
+      const a = at, cx = at.kx, cy = at.ky, sx = at.x, sy = at.y;
       const paint = img => { a.kg.drawImage(img, cx, cy, cw, COVER_H); s.ccell = [cx/AW, 1 - (cy + COVER_H)/AH, (cx + cw)/AW, 1 - cy/AH]; };
       const img = pic(src, () => {                       // arrived after the shelves were built: paint it in and point the face at it
         if (!a.mesh || a.mesh.userData.gone) return;
-        paint(pics.get(src).img); a.ktex.needsUpdate = true; coverUv(s); });
+        paint(pics.get(src).img); a.ktex.needsUpdate = true; coverUv(s);
+        if (styleOf(s.b) === WRAP) { drawSpine(a.g, sx, sy, w, CELL_H, s.b); a.tex.needsUpdate = true; } });
       if (img) paint(img);
       at.kx += cw + 2;
     }
     at.books.push(s); at.x += w + 2;
   }
   for (const a of atlases) {
-    const tex = new THREE.CanvasTexture(a.c); tex.colorSpace = THREE.NoColorSpace; tex.anisotropy = aniso;
+    const tex = a.tex = new THREE.CanvasTexture(a.c); tex.colorSpace = THREE.NoColorSpace; tex.anisotropy = aniso;
     a.ktex = new THREE.CanvasTexture(a.k); a.ktex.colorSpace = THREE.NoColorSpace; a.ktex.anisotropy = aniso;
     const n = a.books.length, pos = new Float32Array(n*72), uv = new Float32Array(n*48), col = new Float32Array(n*72), sh = new Float32Array(n*24), idx = [];
     a.books.forEach((s, i) => {
@@ -1358,7 +1405,7 @@ function makeBook(info, shelf = "to-read") {
     cover: info.cover || "", color: info.color || "", themesTried: true };
   if (info.ink) b.ink = info.ink;
   if (info.spineImg) b.spineImg = info.spineImg;
-  if (SPINE_STYLES.includes(info.spineStyle) || (info.spineStyle === PHOTO && info.spineImg)) b.spineStyle = info.spineStyle;
+  if (isStyle(info.spineStyle) || (info.spineStyle === PHOTO && info.spineImg)) b.spineStyle = info.spineStyle;
   b.id = b.isbn ? "b" + b.isbn : newId(b);
   return b;
 }
@@ -1404,7 +1451,7 @@ function lookPicker(root, info, { base = () => info, onChange = () => {}, onShel
   const n = ++pickN, look = {
     cover: info.cover || (info.isbn ? `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(info.isbn)}-M.jpg?default=false` : ""),
     color: colorOf(info), ink: info.ink || "", ownColour: !!info.color && !onShelf,
-    spineImg: info.spineImg || "", spineStyle: SPINE_STYLES.includes(info.spineStyle) || (info.spineStyle === PHOTO && info.spineImg) ? info.spineStyle : hash(info.title + "spine") % 3,
+    spineImg: info.spineImg || "", spineStyle: (info.spineStyle === PHOTO && !info.spineImg) ? hash(info.title + "spine") % 3 : styleOf(info),
     covers: [], palette: [] };
   root.innerHTML = `<div class="plbl" id="covLbl${n}">Cover <small>finding other editions…</small></div>
     <div class="strip covers" role="radiogroup" aria-labelledby="covLbl${n}"></div>
@@ -1433,9 +1480,10 @@ function lookPicker(root, info, { base = () => info, onChange = () => {}, onShel
   const countCovers = () => { q(".plbl small").textContent = look.covers.length ? "" : "none found"; };
   const drawSpines = () => {
     const b = book(), d = dims(b), w = clamp(Math.round(CELL_H*d.t/d.h0), 96, 220);
-    const styles = look.spineImg ? [PHOTO, ...SPINE_STYLES] : SPINE_STYLES;   // your own photo first, once there is one
+    // your own photo first, once there is one; then the cover carried round, when there's a cover
+    const styles = [...(look.spineImg ? [PHOTO] : []), ...(look.cover ? [WRAP] : []), ...SPINE_STYLES];
     q(".spines").innerHTML = styles.map(s => `<button type="button" role="radio" aria-checked="${s === look.spineStyle}" data-style="${s}"
-      aria-label="${["Gilt bands", "Title label", "Plain", "Your photo of the spine"][s]}"><canvas></canvas></button>`).join("");
+      aria-label="${["Gilt bands", "Title label", "Plain", "Your photo of the spine", "The cover's artwork, carried round"][s]}"><canvas></canvas></button>`).join("");
     qa(".spines canvas").forEach((c, i) => { c.width = w; c.height = CELL_H; drawSpine(c.getContext("2d"), 0, 0, w, CELL_H, { ...b, spineStyle: styles[i] }); });
   };
   const drawSwatches = () => {
@@ -1450,6 +1498,7 @@ function lookPicker(root, info, { base = () => info, onChange = () => {}, onShel
   const chooseCover = async (u, quiet) => {
     const changed = u !== look.cover; look.cover = u;
     for (const x of qa("[data-cover]")) x.setAttribute("aria-checked", x.dataset.cover === u);
+    pic(u, () => root.isConnected && look.cover === u && drawSpines());    // the cover-wrapped spine needs its picture
     if (changed) onChange();
     const pal = await coverPalette(u); if (look.cover !== u) return;
     look.palette = pal;
@@ -1458,7 +1507,7 @@ function lookPicker(root, info, { base = () => info, onChange = () => {}, onShel
     drawSwatches();
   };
   const chooseColour = (c, own) => { look.color = c; look.ink = ""; look.ownColour = true;
-    if (look.spineStyle === PHOTO) look.spineStyle = hash(look.cover + info.title) % 3;   // a colour is for a cloth spine, not the photo
+    if (look.spineStyle === PHOTO || look.spineStyle === WRAP) look.spineStyle = hash(look.cover + info.title) % 3;   // a colour is for a cloth spine
     drawSpines(); onChange();
     if (own) { const l = q(".own"); l.classList.add("on"); l.style.background = c; for (const x of qa("[data-color]")) x.setAttribute("aria-checked", false); }
     else drawSwatches(); };
@@ -2023,6 +2072,15 @@ async function enrich(books) {
   if (!lift) rebuildKeep(openBook ? openBook.b.id : null);       // pages change the spines' thickness
 }
 
+// once: every book with a cover takes the cover's spine (your own spine photos stay). Afterwards a spine you choose sticks.
+try {
+  const WRAP_ALL = "shelflife.nook.coverspines.v1";
+  if (!localStorage.getItem(WRAP_ALL)) {
+    let n = 0; for (const b of library) if (!b.sample && coverSrc(b) && b.spineStyle !== PHOTO && b.spineStyle !== WRAP) { b.spineStyle = WRAP; n++; }
+    if (n) saveLib();
+    localStorage.setItem(WRAP_ALL, "1");
+  }
+} catch (e) {}
 await Promise.all(library.filter(b => b.spineStyle === PHOTO).map(b => picReady(b.spineImg)));   // spine photos are drawn into the first build
 buildShelves();
 // books imported before covers were looked up: find theirs once, quietly
