@@ -606,6 +606,7 @@ for (const b of library) if (!b.id) b.id = newId(b);
 function saveLib() {
   libDoc = { ...(libDoc || {}), books: library };       // everything else the app keeps is left as it was
   try { localStorage.setItem(LIB_KEY, JSON.stringify(libDoc)); } catch (e) { toast("Couldn't save: this browser's storage is full or blocked."); }
+  try { letterSoon(); } catch (e) {}                    // new books or covers: read their lettering (not before the page has set up)
 }
 // how the nook arranges them: an order, a filter, and (for "My arrangement") which book stands on which shelf
 let prefs = { order: "mine", filter: "", rows: null };
@@ -735,6 +736,198 @@ function edgeInk(img, src, sw) {
     ink = inkOn(hex); } catch (e) {}
   edgeTone.set(src, ink); return ink;
 }
+
+// ---- the cover's own lettering on its spine. Text recognition (Tesseract, run on the phone, no account or server) finds
+// where the title and author are printed on the cover; that lettering is lifted off its background and laid along the
+// spine. Only when every main word of the title is found: otherwise the spine keeps the printed font, never half a title.
+const LET_V = 3, TESS = "https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js";
+const bigCover = u => String(u || "").replace(/-M\.jpg/, "-L.jpg");      // Open Library's larger picture reads better
+const LET_STOP = new Set("a an the of and to in on for at by with from or".split(" "));
+const letTokens = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
+function within1(a, b) {                                   // equal, or one letter off (for words of five letters or more)
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, e = 0;
+  while (i < a.length && j < b.length) { if (a[i] === b[j]) { i++; j++; continue; } if (++e > 1) return false;
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } }
+  return e + (a.length - i) + (b.length - j) <= 1;
+}
+const loadImg = u => new Promise((res, rej) => { const i = new Image(); i.crossOrigin = "anonymous";
+  const t = setTimeout(() => rej(new Error("slow")), 20000);
+  i.onload = () => { clearTimeout(t); i.naturalWidth > 40 ? res(i) : rej(new Error("blank")); }; i.onerror = () => { clearTimeout(t); rej(new Error("load")); }; i.src = u; });
+let ocrW = null;
+function ocrWorker() {
+  if (!ocrW) ocrW = (async () => {
+    if (!window.Tesseract) await new Promise((r, j) => { const sc = document.createElement("script"); sc.src = TESS; sc.onload = r; sc.onerror = j; document.head.appendChild(sc); });
+    return Tesseract.createWorker("eng");
+  })().catch(e => { ocrW = null; throw e; });
+  return ocrW;
+}
+// where the title and the author's surname are printed, as fractions of the cover (null when not found)
+async function findLettering(b, img) {
+  // catalogue covers are small (often 330 px tall): enlarged, the letters are big enough to read. A second look with the
+  // colours inverted catches pale lettering on dark covers, which the reader often misses.
+  const k = 1100/img.naturalHeight, W = Math.round(img.naturalWidth*k), H = 1100;
+  const worker = await ocrWorker();
+  let lineN = 0;
+  const read = async filter => {
+    const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    if (filter) g.filter = filter; g.drawImage(img, 0, 0, W, H);
+    const { data } = await worker.recognize(c, {}, { blocks: true }), out = [];
+    for (const bl of data.blocks || []) for (const p of bl.paragraphs || []) for (const l of p.lines || []) { const line = { id: lineN++, ...l.bbox };
+      for (const w of l.words || []) { const t = letTokens(w.text).join(""); if (t && w.confidence >= 45) out.push({ t, ...w.bbox, line, used: false }); } }
+    return out;
+  };
+  const all = letTokens(b.title.split(/[:(]/)[0]), main = all.filter(t => !LET_STOP.has(t)), want = main.length ? main : all;
+  let words = await read("");
+  if (!want.every(t => words.some(w => within1(w.t, t)))) {
+    const inv = await read("grayscale(1) invert(1) contrast(1.4)");
+    if (want.every(t => inv.some(w => within1(w.t, t)))) words = inv;
+    else words = words.concat(inv.filter(w => !words.some(o => o.t === w.t)));   // at least the author, from either look
+  }
+  const pick = tokens => { const got = [];
+    for (const t of tokens) { const w = words.filter(w => !w.used && within1(w.t, t)).sort((a, b) => (b.y1 - b.y0) - (a.y1 - a.y0))[0];
+      if (!w) return null; w.used = true; got.push(w); }
+    return got; };
+  const norm4 = (x0, y0, x1, y1, pad) => [Math.max(0, x0 - pad)/W, Math.max(0, y0 - pad)/H, Math.min(W, x1 + pad)/W, Math.min(H, y1 + pad)/H];
+  // each printed line of the title that holds one of its words, whole (so small words beside them come too), top to bottom;
+  // the gaps between them, and the line above when the title starts with "A" or "The", may hold the small words set on a
+  // line of their own: those are offered as optional ("maybe") and kept only if lettering is found there
+  const titleBoxes = ws => {
+    const lines = [...new Map(ws.map(w => [w.line.id, w.line])).values()].sort((a, b) => a.y0 - b.y0);
+    const mh = lines.map(l => l.y1 - l.y0).sort((a, b) => a - b)[lines.length >> 1], pad = 0.12*mh;
+    const bx0 = Math.min(...lines.map(l => l.x0)), bx1 = Math.max(...lines.map(l => l.x1)), out = [];
+    if (LET_STOP.has(all[0]) && !main.includes(all[0]) && lines[0].y0 > 0.6*mh)
+      out.push({ b: norm4(bx0, lines[0].y0 - 1.15*mh, bx1, lines[0].y0 - 0.05*mh, 0), maybe: true });
+    lines.forEach((l, i) => {
+      const prev = lines[i - 1];
+      if (prev && l.y0 - prev.y1 > 0.35*mh) out.push({ b: norm4(bx0, prev.y1, bx1, l.y0, 0), maybe: true });
+      out.push({ b: norm4(l.x0, l.y0, l.x1, l.y1, pad) });
+    });
+    return out;
+  };
+  const tw = pick(want);
+  const surname = letTokens(b.author).pop(), aw = surname && surname !== "author" ? pick([surname]) : null;
+  const al = aw && aw[0].line, ah = al ? al.y1 - al.y0 : 0;
+  return { cover: coverSrc(b), v: LET_V, title: tw ? titleBoxes(tw) : null, author: al ? norm4(al.x0, al.y0, al.x1, al.y1, 0.12*ah) : null };
+}
+// lift a line of lettering off its background. The background is the colour round the edge of the box; the lettering is
+// what stands apart from it, and then only what shares the lettering's own colour (so artwork beside the type stays
+// behind). Of the bands of type in the box, the strongest is kept (a box can catch the edge of the line above or below).
+// Gives a canvas trimmed to the letters, in their own colours, or null. Remembered per cover and box.
+const letCache = new Map();
+function liftLettering(img, bx, hint = null) {
+  const key = img.src + "|" + bx.join(",") + "|" + (hint ? hint.map(Math.round).join(",") : "");
+  if (letCache.has(key)) return letCache.get(key);
+  let out = null;
+  try {
+    const iw = img.naturalWidth, ih = img.naturalHeight, sx = bx[0]*iw, sy = bx[1]*ih, sw = (bx[2] - bx[0])*iw, sh = (bx[3] - bx[1])*ih;
+    if (sw < 3 || sh < 3) throw 0;
+    const k = Math.max(1, Math.min(3, 160/sh)), cw = Math.max(4, Math.round(sw*k)), ch = Math.max(4, Math.round(sh*k));
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch; const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+    const im = g.getImageData(0, 0, cw, ch), d = im.data, n = cw*ch;
+    const ring = []; for (let x = 0; x < cw; x++) ring.push(x, (ch - 1)*cw + x); for (let y = 0; y < ch; y++) ring.push(y*cw, y*cw + cw - 1);
+    const medOf = (idx, c2) => { const v = idx.map(i => d[i*4 + c2]).sort((a, b) => a - b); return v[v.length >> 1]; };
+    const bg = [0, 1, 2].map(c2 => medOf(ring, c2)), dist = new Float32Array(n);
+    for (let i = 0; i < n; i++) dist[i] = Math.hypot(d[i*4] - bg[0], d[i*4+1] - bg[1], d[i*4+2] - bg[2]);
+    const D = Array.from(dist).sort((a, b) => a - b)[Math.floor(n*0.93)];
+    if (D < 55) throw 0;
+    const a1 = new Float32Array(n), strong = [];
+    for (let i = 0; i < n; i++) { a1[i] = Math.max(0, Math.min(1, (dist[i] - 0.35*D)/(0.3*D))); if (a1[i] > 0.85) strong.push(i); }
+    if (strong.length < 8) throw 0;
+    let ink = [0, 1, 2].map(c2 => medOf(strong, c2)), cands = [{ col: ink, score: 1 }];
+    if (hint) ink = hint;
+    else {
+      const col = i => [d[i*4], d[i*4+1], d[i*4+2]], dd = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+      let A = col(strong[0]), Bc = A; for (const i of strong) if (dd(col(i), A) > dd(Bc, A)) Bc = col(i);
+      const grp = new Int8Array(n).fill(-1);
+      for (let it = 0; it < 6; it++) {
+        const sum = [[0, 0, 0, 0], [0, 0, 0, 0]];
+        for (const i of strong) { const p = col(i), k2 = dd(p, A) <= dd(p, Bc) ? 0 : 1; grp[i] = k2; sum[k2][0] += p[0]; sum[k2][1] += p[1]; sum[k2][2] += p[2]; sum[k2][3]++; }
+        if (sum[0][3]) A = sum[0].slice(0, 3).map(v => v/sum[0][3]); if (sum[1][3]) Bc = sum[1].slice(0, 3).map(v => v/sum[1][3]);
+      }
+      const size = [0, 0], edge = [0, 0];
+      for (const i of strong) { const k2 = grp[i], x = i % cw, y = (i/cw)|0; size[k2]++;
+        if (x > 0 && grp[i-1] !== k2 || x < cw-1 && grp[i+1] !== k2 || y > 0 && grp[i-cw] !== k2 || y < ch-1 && grp[i+cw] !== k2) edge[k2]++; }
+      if (dd(A, Bc) > 60 && Math.min(...size) > 0.12*strong.length) {
+        cands = [{ col: A, score: edge[0]/size[0] }, { col: Bc, score: edge[1]/size[1] }];
+        ink = cands[0].score >= cands[1].score ? A : Bc;
+      }
+    }
+    const Dib = Math.max(40, Math.hypot(ink[0] - bg[0], ink[1] - bg[1], ink[2] - bg[2]));
+    const rows = new Float32Array(ch);
+    for (let i = 0; i < n; i++) {
+      const di = Math.hypot(d[i*4] - ink[0], d[i*4+1] - ink[1], d[i*4+2] - ink[2]);
+      const a = a1[i]*Math.max(0, Math.min(1, 1 - (di - 0.45*Dib)/(0.35*Dib)));
+      d[i*4+3] = a*255; rows[(i/cw)|0] += a;
+    }
+    g.putImageData(im, 0, 0);
+    // bands of rows with ink, joined across small gaps; the band with the most ink is the line
+    const runs = []; let start = -1;
+    for (let y = 0; y <= ch; y++) { const on = y < ch && rows[y]/cw > 0.012;
+      if (on && start < 0) start = y; if (!on && start >= 0) { runs.push([start, y]); start = -1; } }
+    const merged = []; for (const r of runs) { const p = merged[merged.length - 1]; if (p && r[0] - p[1] < ch*0.06) p[1] = r[1]; else merged.push([...r]); }
+    if (!merged.length) throw 0;
+    const inkOf = ([y0, y1]) => { let t = 0; for (let y = y0; y < y1; y++) t += rows[y]; return t; };
+    const [y0, y1] = merged.reduce((m, r) => inkOf(r) > inkOf(m) ? r : m);
+    let x0 = cw, x1 = 0;
+    for (let y = y0; y < y1; y++) for (let x = 0; x < cw; x++) if (d[(y*cw + x)*4 + 3] > 60) { if (x < x0) x0 = x; if (x > x1) x1 = x; }
+    if (x1 <= x0) throw 0;
+    const lc = document.createElement("canvas"); lc.width = x1 - x0 + 1; lc.height = y1 - y0;
+    lc.getContext("2d").drawImage(c, x0, y0, lc.width, lc.height, 0, 0, lc.width, lc.height);
+    let inkSum = 0; for (let y = y0; y < y1; y++) for (let x = x0; x <= x1; x++) inkSum += d[(y*cw + x)*4 + 3]/255;
+    lc.ink = ink; lc.cands = cands; lc.srcH = (y1 - y0)/k/ih; lc.density = inkSum/(lc.width*lc.height); out = lc;
+  } catch (e) { out = null; }
+  letCache.set(key, out); return out;
+}
+// the lifted lines laid end to end down the spine (title from the top, surname at the foot); false if there's nothing to lay
+function drawLettering(g, x, y, w, h, b, shade) {
+  const L = b.spineText, src = coverSrc(b);
+  if (!L || L.v !== LET_V || L.cover !== src || !L.title) return false;
+  const img = pic(bigCover(src)) || pic(src); if (!img) return false;
+  const lines = [];
+  const boxes = L.title.map(t => ({ ...t, b: [...t.b] }));
+  for (let i = 1; i < boxes.length; i++) { const p = boxes[i - 1].b, q = boxes[i].b;
+    if (p[3] > q[1]) { const m = (p[3] + q[1])/2; p[3] = m; q[1] = m; } }
+  // a title is printed in one colour; the artwork behind it changes from line to line. So the lettering's colour is the
+  // one found in the most lines, and every line is lifted in it.
+  const first = boxes.filter(t => !t.maybe).map(t => liftLettering(img, t.b));
+  if (first.some(c => !c)) return false;                    // a word of the title couldn't be lifted: keep the printed font
+  let hint = null;
+  if (first.length > 1) {
+    const near = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) < 60;
+    let best = -1;
+    for (const c of first) for (const cand of c.cands) {
+      const hits = first.filter(o => o.cands.some(x => near(x.col, cand.col))).length, sc = hits + cand.score*0.5;
+      if (sc > best) { best = sc; hint = cand.col; }
+    }
+  }
+  const got = boxes.map(t => ({ ...t, c: liftLettering(img, t.b, hint) }));
+  if (got.some(t => !t.maybe && !t.c)) return false;
+  const sure = got.filter(t => !t.maybe), inkRef = sure[0].c.ink;
+  for (const t of got) {
+    const c = t.c; if (!c) continue;
+    // a small word on a line of its own is kept only if it is type in the title's colour, not a scrap of artwork
+    const hRef = sure.map(t2 => t2.c.srcH).sort((p, q) => p - q)[sure.length >> 1];
+    if (t.maybe && (c.width/c.height < 0.4 || c.width/c.height > 9 || c.srcH < 0.25*hRef || c.density < 0.12
+      || Math.hypot(...c.ink.map((v, i) => v - inkRef[i])) > 60)) continue;
+    lines.push(c);
+  }
+  const lay = (cans, from, to, thMax, alignEnd) => {
+    let th = thMax; const gap = () => th*0.32;
+    const len = () => cans.reduce((s, c) => s + c.width*th/c.height, 0) + gap()*(cans.length - 1);
+    if (len() > to - from) th *= (to - from)/len();
+    g.save(); g.translate(x + w/2, y); g.rotate(Math.PI/2); g.shadowColor = shade; g.shadowBlur = Math.max(2, th*0.12);
+    let cur = alignEnd ? to - len() : from;
+    for (const c of cans) { const lw = c.width*th/c.height; g.drawImage(c, cur, -th/2, lw, th); cur += lw + gap(); }
+    g.restore();
+  };
+  const ac = L.author && liftLettering(img, L.author), author = ac ? [ac] : null;
+  lay(lines, h*0.07, h*(author ? 0.72 : 0.93), w*0.66, false);
+  if (author) lay(author, h*0.76, h*0.94, w*0.42, true);
+  return true;
+}
 function drawSpine(g, x, y, w, h, b) {
   const st = styleOf(b), wrapImg = st === WRAP && pic(coverSrc(b));
   if (wrapImg) {
@@ -750,6 +943,7 @@ function drawSpine(g, x, y, w, h, b) {
     gr.addColorStop(0, "rgba(0,0,0,.30)"); gr.addColorStop(.3, "rgba(255,255,255,.06)"); gr.addColorStop(.7, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.28)");
     g.fillStyle = gr; g.fillRect(x, y, w, h);
     const ink = edgeInk(wrapImg, coverSrc(b), sw), shade = ink === "#1c1a17" ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.55)";
+    if (drawLettering(g, x, y, w, h, b, shade)) return;  // the cover's own lettering, when it has been found
     g.save(); g.translate(x + w/2, y + h*0.08); g.rotate(Math.PI/2);
     const title = b.title.replace(/\s*\(.*?\)\s*$/, ""), avail = h*0.66;
     let fs = Math.min(w*0.52, 42); g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`;
@@ -887,6 +1081,8 @@ function buildShelves() {
         if (!a.mesh || a.mesh.userData.gone) return;
         paint(pics.get(src).img); a.ktex.needsUpdate = true; coverUv(s);
         if (styleOf(s.b) === WRAP) { drawSpine(a.g, sx, sy, w, CELL_H, s.b); a.tex.needsUpdate = true; } });
+      if (styleOf(s.b) === WRAP && s.b.spineText && s.b.spineText.title && !pic(bigCover(src)))
+        pic(bigCover(src), () => { if (!a.mesh || a.mesh.userData.gone) return; drawSpine(a.g, sx, sy, w, CELL_H, s.b); a.tex.needsUpdate = true; });
       if (img) paint(img);
       at.kx += cw + 2;
     }
@@ -2072,6 +2268,26 @@ async function enrich(books) {
   if (!lift) rebuildKeep(openBook ? openBook.b.id : null);       // pages change the spines' thickness
 }
 
+// read the lettering of every cover-spined book not read yet, one at a time, in the background
+const needsLetters = b => { const c = coverSrc(b); return !!c && !b.sample && styleOf(b) === WRAP && !(b.spineText && b.spineText.v === LET_V && b.spineText.cover === c); };
+let letBusy = false, letT = 0;
+async function letterQueue() {
+  if (letBusy || !library.some(needsLetters)) return; letBusy = true;
+  try {
+    let fresh = 0;
+    for (let b; (b = library.find(needsLetters));) {
+      const src = coverSrc(b); let img = null;
+      try { img = await loadImg(bigCover(src)); } catch (e) { try { img = await loadImg(src); } catch (e2) {} }
+      if (!img) { b.spineText = { cover: src, v: LET_V, title: null, author: null }; continue; }
+      try { b.spineText = await findLettering(b, img); }
+      catch (e) { return; }                               // the reader couldn't load (offline): try again another time
+      if (b.spineText.title) fresh++;
+      if (fresh && fresh % 6 === 0 && !lift) { saveLib(); rebuildKeep(openBook ? openBook.b.id : null); }
+    }
+    saveLib(); if (fresh && !lift) rebuildKeep(openBook ? openBook.b.id : null);
+  } finally { letBusy = false; }
+}
+function letterSoon() { if (letBusy) return; clearTimeout(letT); letT = setTimeout(letterQueue, 2500); }
 // once: every book with a cover takes the cover's spine (your own spine photos stay). Afterwards a spine you choose sticks.
 try {
   const WRAP_ALL = "shelflife.nook.coverspines.v1";
@@ -2082,6 +2298,7 @@ try {
   }
 } catch (e) {}
 await Promise.all(library.filter(b => b.spineStyle === PHOTO).map(b => picReady(b.spineImg)));   // spine photos are drawn into the first build
+setTimeout(letterQueue, 5000);
 buildShelves();
 // books imported before covers were looked up: find theirs once, quietly
 { const bare = library.filter(b => !b.sample && !b.cover && b.coverTried !== 2); if (bare.length) setTimeout(() => enrich(bare), 1500); }
