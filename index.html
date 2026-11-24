@@ -305,8 +305,8 @@ body[data-room=study] #dBook .dlg{padding:30px 30px 26px}
 body[data-room=study] #dBook h2{color:#f3dfb4;font-size:34px}
 body[data-room=study] #dBook .by{font:italic 400 18px/1.3 "EB Garamond",Georgia,serif;color:#e0cba0}
 body[data-room=study] #dBook .lab{font:500 10px/1.3 var(--body);letter-spacing:.18em}
-body[data-room=study] #dBook .stars button{color:rgba(201,162,74,.35)}
-body[data-room=study] #dBook .stars button.on{color:#e8c274}
+body[data-room=study] #dBook .stars .st{color:rgba(201,162,74,.35)}
+body[data-room=study] #dBook .stars .st i{color:#e8c274}
 body[data-room=study] #dBook select,body[data-room=study] #dBook input[type=text]{background:rgba(0,0,0,.25);border-color:rgba(201,162,74,.6);color:var(--paper-ink)}
 body[data-room=study] #dBook select option{background:#3a1614;color:#f1e2c0}
 body[data-room=study] #dBook textarea{border:0;border-radius:2px;padding:4px 12px;color:#3a2614;font:500 20px/24px Caveat,cursive;
@@ -466,8 +466,11 @@ dialog::backdrop{background:rgba(10,15,19,.72);animation:fade .35s ease}
 .meta{color:var(--paper-dim);font-size:13px;margin:0 0 16px;font-variant-numeric:tabular-nums}
 .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);margin:16px 0 6px;font-weight:600}
 .stars{display:flex;align-items:center;gap:2px}
-.stars button{border:0;background:none;padding:0 1px;font-size:26px;line-height:1;color:#c9bca3}
-.stars button.on{color:#c98a12}
+.stars .rate{display:inline-flex;align-items:center;gap:2px;touch-action:none;cursor:pointer;border-radius:6px}
+.stars .rate:focus-visible{outline:2px solid #c98a12;outline-offset:2px}
+.stars .st{position:relative;display:inline-block;width:27px;font-size:26px;line-height:1;color:#c9bca3}
+.stars .st i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;font-style:normal;color:#c98a12}
+.stars output{margin-left:8px;min-width:30px;color:var(--paper-dim);font-size:14px;font-weight:600}
 .stars small{margin-left:12px;color:var(--paper-dim);font-size:13px}
 .row2{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
 .dlg select,.dlg input[type=text],.dlg textarea{background:#fffaf0;border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--paper-ink)}
@@ -969,11 +972,27 @@ function drawBook(b){
     $("#rmNo").onclick = () => drawBook(b);
   };
 }
+// a rating in quarter stars (the reading nook uses the same): tap or drag along the stars, arrow keys step a quarter,
+// tapping the rating it already has clears it
 function drawStars(b){
-  const el = $("#stars");
-  el.innerHTML = [1,2,3,4,5].map(n=>`<button class="${n<=(b.myRating||0)?"on":""}" data-n="${n}" aria-label="${n} star${n>1?"s":""}">★</button>`).join("")
+  const el = $("#stars"), r = Math.round((+b.myRating||0)*4)/4, fmt = v => v ? String(v) : "";
+  el.innerHTML = `<div class="rate" role="slider" tabindex="0" aria-label="My rating" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${r}" aria-valuetext="${r ? r+" of 5 stars" : "Not rated"}">`
+    + [0,1,2,3,4].map(k=>`<span class="st" aria-hidden="true">☆<i style="width:${Math.min(1,Math.max(0,r-k))*100}%">★</i></span>`).join("") + `<output>${fmt(r)}</output></div>`
     + (b.avgRating ? `<small>Goodreads average ${Number(b.avgRating).toFixed(2)}</small>` : "");
-  el.onclick = e => { const n = +e.target.dataset.n; if(!n) return; b.myRating = b.myRating===n ? 0 : n; save(); drawStars(b); };
+  const rate = el.querySelector(".rate"), st = [...rate.querySelectorAll(".st")];
+  const paint = v => { st.forEach((s,k)=>s.firstElementChild.style.width = Math.min(1,Math.max(0,v-k))*100+"%"); rate.querySelector("output").textContent = fmt(v); };
+  const at = x => { const a = st[0].getBoundingClientRect(), z = st[4].getBoundingClientRect(); return Math.min(5, Math.max(0.25, Math.ceil((x-a.left)/(z.right-a.left)*20)/4)); };
+  const set = v => { b.myRating = v; save(); drawStars(b); };
+  let drag = null;
+  rate.onpointerdown = e => { e.preventDefault(); rate.setPointerCapture(e.pointerId); drag = { v: at(e.clientX), moved: false }; paint(drag.v); };
+  rate.onpointermove = e => { if(!drag) return; const v = at(e.clientX); if(v!==drag.v){ drag.v = v; drag.moved = true; paint(v); } };
+  rate.onpointerup = () => { if(!drag) return; const { v, moved } = drag; drag = null; set(!moved && v===r ? 0 : v); };
+  rate.onpointercancel = () => { drag = null; paint(r); };
+  rate.onkeydown = e => {
+    const step = { ArrowRight:.25, ArrowUp:.25, ArrowLeft:-.25, ArrowDown:-.25 }[e.key];
+    const v = step!=null ? Math.min(5,Math.max(0,r+step)) : ["Home","Delete","Backspace"].includes(e.key) ? 0 : e.key==="End" ? 5 : /^[0-5]$/.test(e.key) ? +e.key : null;
+    if(v==null) return; e.preventDefault(); e.stopPropagation(); set(v); $("#stars .rate").focus();
+  };
 }
 function drawThemes(b){
   const el = $("#themes"); if(!el) return;
@@ -1171,10 +1190,10 @@ function renderStats(){
       <div class="tile"><b>${read.length}</b><span>books read</span></div>
       <div class="tile"><b>${pages.toLocaleString()}</b><span>pages read</span></div>
       <div class="tile"><b>${read.filter(b=>(b.dateRead||"").startsWith(yr)).length}</b><span>finished in ${yr}</span></div>
-      <div class="tile"><b>${rated.length ? (rated.reduce((n,b)=>n+b.myRating,0)/rated.length).toFixed(1) : "–"}</b><span>average rating out of 5</span></div>
+      <div class="tile"><b>${rated.length ? (rated.reduce((n,b)=>n+(+b.myRating),0)/rated.length).toFixed(2) : "–"}</b><span>average rating out of 5</span></div>
     </div>
     <h2>By status</h2>${bars(Object.entries(SHELVES).map(([k,v])=>[v, books.filter(b=>b.shelf===k).length]))}
-    <h2>My ratings</h2>${rated.length ? bars([5,4,3,2,1].map(n=>["★".repeat(n), rated.filter(b=>b.myRating===n).length])) : `<p class="sub">Rate a book to see how your ratings spread.</p>`}
+    <h2>My ratings</h2>${rated.length ? bars([5,4,3,2,1].map(n=>["★".repeat(n), rated.filter(b=>Math.max(1,Math.round(+b.myRating))===n).length])) : `<p class="sub">Rate a book to see how your ratings spread.</p>`}
     <h2>Finished per year</h2>${years.length ? bars(years) : `<p class="sub">Books with a finish date will be counted here.</p>`}
     ${themes.length ? `<h2>Themes you read most</h2>${bars(themes)}` : ""}
     ${authors.length ? `<h2>Authors you read most</h2>${bars(authors)}` : ""}`;
