@@ -295,6 +295,17 @@ body { margin: 0; background: var(--night); color: var(--parchment); overflow: h
 .kst { flex: none; min-width: 76px; min-height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(233,184,114,.35); background: none;
   color: #f6dcae; font: 600 12px/1 var(--font-ui); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .kadd { position: sticky; bottom: -6px; padding: 8px 0 6px; background: linear-gradient(to top, rgba(22,14,9,.96) 70%, rgba(22,14,9,0)); }
+/* lending */
+.loan { margin: 12px 0 0; padding: 12px 14px; border-radius: 14px; border: 1px dashed rgba(233,184,114,.5); background: rgba(233,184,114,.07); }
+.loan p { margin: 0; font: italic 500 17px/1.35 var(--font-display); }
+.loan p b { font-style: normal; font-weight: 600; color: #f6dcae; }
+.loan small { display: block; margin-top: 3px; font: 600 13px/1.3 var(--font-ui); color: var(--muted); }
+.loan .note { margin: 6px 0 0; padding: 0; font-size: 15px; }
+.loan .trow { margin-top: 10px; }
+.lendform { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lendform .wide2 { grid-column: 1 / -1; }
+.lendform .trow { grid-column: 1 / -1; }
+.lendhist { margin: 8px 0 0; font: italic 500 14px/1.35 var(--font-display); color: var(--muted); }
 /* finding a book */
 .findbox { position: relative; margin: 0 16px 10px; }
 .findbox svg { position: absolute; left: 12px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
@@ -743,7 +754,8 @@ const savePrefs = () => { try { localStorage.setItem(NOOK_KEY, JSON.stringify(pr
 
 const STATUS = [["read", "Read"], ["currently-reading", "Reading"], ["to-read", "TBR"], ["dnf", "DNF"]];
 const STATUS_LONG = { "read": "Read", "currently-reading": "Reading now", "to-read": "Want to read", "dnf": "Did not finish" };
-const FILTERS = [["", "All"], ...STATUS];
+const FILTERS = [["", "All"], ...STATUS, ["lent", "Lent out"]];
+const FILTER_LONG = { ...STATUS_LONG, lent: "Lent out" };
 const ORDERS = [["mine", "My arrangement"], ["genre", "Genre"], ["series", "Series"], ["status", "Read · Reading · TBR · DNF"], ["author", "Author"], ["title", "Title"],
   ["rating", "My rating"], ["added", "Date added"], ["read", "Date read"]];
 
@@ -830,7 +842,7 @@ const seriesNo = b => +b.seriesNo || 0;
 const inAuthor = (a, b) => (a.series ? 0 : 1) - (b.series ? 0 : 1) || bare(a.series || "").localeCompare(bare(b.series || "")) ||
   seriesNo(a) - seriesNo(b) || (+a.year || 9999) - (+b.year || 9999) || bare(a.title).localeCompare(bare(b.title));
 const bySeriesAuthor = (a, b) => surname(a.author).localeCompare(surname(b.author)) || inAuthor(a, b);
-const shown = b => !prefs.filter || b.shelf === prefs.filter;
+const shown = b => !prefs.filter || (prefs.filter === "lent" ? !!b.loan : b.shelf === prefs.filter);
 const perRow = n => Math.max(6, Math.ceil(n / NROW));  // a small library is spread out rather than packed onto one shelf
 
 // rows of entries {b, gap, label}. Sorted orders flow; status and genre groups each get a little gap and a brass
@@ -882,7 +894,7 @@ function layoutRows() {
 const STACK = { x: 0.36, y: 1.70, z: 0.577 }, STACK_MAX = 5;   // on the tufted cushion, between the pillows and the throw
 let onBench = new Set(), benchShade = null;
 function benchList() {
-  return library.filter(b => b.shelf === "currently-reading")
+  return library.filter(b => b.shelf === "currently-reading" && !b.loan)
     .sort((a, b) => String(b.dateAdded || "").localeCompare(String(a.dateAdded || ""))).slice(0, STACK_MAX);
 }
 
@@ -1133,6 +1145,7 @@ function drawLettering(g, x, y, w, h, b, shade) {
   return true;
 }
 function drawSpine(g, x, y, w, h, b) {
+  if (b.loan) return drawSlip(g, x, y, w, h, b);
   const st = styleOf(b), wrapImg = st === WRAP && pic(coverSrc(b));
   if (wrapImg) {
     // the cover's binding edge, reflected across the fold so the art runs on round the corner. Only a thin strip, stretched
@@ -1243,8 +1256,38 @@ function disposeShelves() {
   if (benchShade) { scene.remove(benchShade); benchShade.geometry.dispose(); benchShade.material.map.dispose(); benchShade.material.dispose(); benchShade = null; }
   if (plates) { scene.remove(plates); plates.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.map?.dispose(); o.material.dispose(); } }); plates = null; }
 }
+// a lent book's place-holder: a slip of cream card, ruled, with LENT and the friend's name stamped up it
+function drawSlip(g, x, y, w, h, b) {
+  g.fillStyle = "#e6dbc2"; g.fillRect(x, y, w, h);
+  g.fillStyle = "rgba(120,90,50,.18)"; for (let k = y + 24; k < y + h; k += 22) g.fillRect(x, k, w, 1);
+  g.fillStyle = "#8e2b22"; g.fillRect(x, y, w, 10); g.fillRect(x, y + h - 10, w, 10);
+  g.save(); g.translate(x + w/2, y + h/2); g.rotate(-Math.PI/2);
+  g.fillStyle = "#7d241c"; g.textAlign = "center"; g.textBaseline = "middle";
+  const f = Math.max(10, Math.min(w*0.72, 40));
+  g.font = `700 ${f}px 'Cormorant Garamond', Georgia, serif`;
+  g.fillText(`LENT · ${String(b.loan.to || "").toUpperCase()}`.slice(0, 28), 0, 0, h - 40);
+  g.restore();
+}
+// the tag on the shelf edge in front of a lent book's gap, written by hand
+const lentTags = new THREE.Group(); scene.add(lentTags);
+function lentTag(s) {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 176; const g = c.getContext("2d");
+  g.fillStyle = "#efe4cc"; g.fillRect(0, 0, 256, 176);
+  for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(90,60,30,${Math.random()*0.06})`; g.fillRect(Math.random()*256, Math.random()*176, 2, 2); }
+  g.strokeStyle = "rgba(142,43,34,.55)"; g.lineWidth = 3; g.strokeRect(9, 9, 238, 158);
+  g.fillStyle = "#6b5a44"; g.textAlign = "center"; g.font = "italic 500 30px 'Cormorant Garamond', Georgia, serif"; g.fillText("lent to", 128, 52);
+  g.fillStyle = "#2a1d12"; g.font = "italic 600 50px 'Cormorant Garamond', Georgia, serif"; g.fillText(String(s.b.loan.to || "a friend"), 128, 106, 220);
+  const on = parseDay(s.b.loan.on); g.fillStyle = "#6b5a44"; g.font = "600 24px 'Cormorant Garamond', Georgia, serif";
+  if (on) g.fillText(on.toLocaleDateString([], { day: "numeric", month: "short" }), 128, 146);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = aniso;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.056, 0.0385), new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(0xcdb995) }));
+  const cx = s.x + s.t/2;
+  m.position.copy(B(cx, 0.322, s.z + 0.0185)); m.rotation.y = Math.PI; m.rotation.x = 0.22;   // propped on the shelf, leaning back
+  m.renderOrder = 3; m.userData.s = s; lentTags.add(m);
+}
 function buildShelves() {
   disposeShelves();
+  for (const m of [...lentTags.children]) { lentTags.remove(m); m.geometry.dispose(); m.material.map.dispose(); m.material.dispose(); }
   byId = new Map(library.map(b => [b.id, b]));
   onBench = new Set(benchList().map(b => b.id));
   const want = (prefs.order === "mine" ? library : library.filter(shown)).filter(b => !onBench.has(b.id));
@@ -1262,16 +1305,21 @@ function buildShelves() {
       v += e.gap;
       const s = { b: e.b, t: d.t, h, d: Math.min(h*0.68, 0.23), y: 0.303 - d.dy, z, bay, row: ri, label: e.label, piv: 0, phi: 0 };
       s.x = X1 - v - d.t; s.px = s.x; v += d.t + d.gap;
+      if (e.b.loan) {                                   // away with a friend: its gap stays, a slip of card stands in it
+        const slip = 0.005; Object.assign(s, { lent: true, x: s.x + (d.t - slip)/2, t: slip, h: h*0.82, d: 0.12, y: 0.303 - 0.004 });
+        s.px = s.x;
+      }
       here.push(s);
     }
     // the last book, with room to spare, leans left against its neighbour (resting on its near corner)
     const n = here.length;
-    if (n >= 3) {
+    if (n >= 3 && !here[n - 1].lent && !here[n - 2].lent) {
       const last = here[n - 1], prev = here[n - 2], th = THREE.MathUtils.degToRad(11 + (hash(last.b.id + "l") % 100)/100*7);
       if (prev.x - (X0 + 0.02) > last.h*Math.sin(th) + last.t + 0.01) { last.piv = 1; last.phi = -th; last.px = prev.x - 0.002 - last.h*Math.sin(th); }
     }
     for (const s of here) { s.c = corner(s, 0.5, true, 0.5); s.cx = s.c.x; }
     shelved.push(...here);
+    for (const s of here) if (s.lent) lentTag(s);
   });
   // the bench stack, each book turned a little, as if put down by hand
   {
@@ -1309,7 +1357,7 @@ function buildShelves() {
     drawSpine(at.g, at.x, at.y, w, CELL_H, s.b);
     s.cell = [at.x/AW, 1 - (at.y + CELL_H)/AH, (at.x + w)/AW, 1 - at.y/AH];
     s.ccell = null;
-    const src = coverSrc(s.b);
+    const src = s.lent ? "" : coverSrc(s.b);
     if (src) {
       const a = at, cx = at.kx, cy = at.ky, sx = at.x, sy = at.y;
       const paint = img => { a.kg.drawImage(img, cx, cy, cw, COVER_H); s.ccell = [cx/AW, 1 - (cy + COVER_H)/AH, (cx + cw)/AW, 1 - cy/AH]; };
@@ -1403,12 +1451,12 @@ function syncNudges() {
 }
 function updateCount() {
   const N = library.length, vis = library.filter(shown).length, words = n => n === 1 ? "1 book" : `${n} books`;
-  let t = prefs.filter ? `${vis} of ${N} · ${STATUS_LONG[prefs.filter]}` : words(N);
+  let t = prefs.filter ? `${vis} of ${N} · ${FILTER_LONG[prefs.filter]}` : words(N);
   if (shelved.length < vis) t = `${shelved.length} of ${words(vis)} on the shelves`;
   else if (shelved.length > 1) t += " · pinch to look closer · hold one to move it";
   $("shelfcount").textContent = t;
   $("empty").querySelector("p").textContent = !N ? "Your shelves are empty. Tap + to add your first book."
-    : `Nothing marked ${STATUS_LONG[prefs.filter] || ""} yet.`;
+    : prefs.filter === "lent" ? "No books are lent out just now." : `Nothing marked ${STATUS_LONG[prefs.filter] || ""} yet.`;
   syncNudges();
 }
 function setMode(m) {
@@ -1795,11 +1843,11 @@ function findBooks(q) {
   const words = fold(q).split(" ").filter(Boolean); if (!words.length) return [];
   const out = [];
   for (const b of library) {
-    const t = fold(b.title), a = fold(b.author), sr = fold(b.series), hay = ` ${t} ${a} ${sr} ${fold(genreOf(b))} ${cleanIsbn(b.isbn).toLowerCase()} `;
+    const t = fold(b.title), a = fold(b.author), sr = fold(b.series), hay = ` ${t} ${a} ${sr} ${fold(genreOf(b))} ${cleanIsbn(b.isbn).toLowerCase()} ${fold(b.loan?.to)} `;
     if (!words.every(w => hay.includes(w))) continue;
     const q1 = words.join(" ");
     const score = (t === q1 ? 0 : t.startsWith(q1) ? 1 : ` ${t}`.includes(` ${q1}`) ? 2 : words.every(w => t.includes(w)) ? 3
-      : ` ${a}`.includes(` ${q1}`) ? 4 : words.every(w => a.includes(w)) ? 5 : sr && words.every(w => sr.includes(w)) ? 6 : 7);
+      : ` ${a}`.includes(` ${q1}`) ? 4 : words.every(w => a.includes(w)) ? 5 : sr && words.every(w => sr.includes(w)) ? 6 : b.loan && words.every(w => fold(b.loan.to).includes(w)) ? 2.5 : 7);
     out.push({ b, score });
   }
   return out.sort((x, y) => x.score - y.score || seriesNo(x.b) - seriesNo(y.b) || bare(x.b.title).localeCompare(bare(y.b.title))).map(x => x.b);
@@ -1827,7 +1875,7 @@ function renderFind() {
   note.textContent = hits.length ? (hits.length === 1 ? "One book." : `${hits.length} books${hits.length > shown20.length ? ` — the first ${shown20.length} shown` : ""}.`) : `Nothing on your shelves matches “${q.trim()}”.`;
   list.innerHTML = shown20.map(b => {
     const st = (STATUS.find(x => x[0] === b.shelf) || [0, ""])[1], ser = b.series ? `${b.series}${b.seriesNo ? ` #${b.seriesNo}` : ""}` : "";
-    const where = onBench.has(b.id) ? "On the bench" : st;
+    const where = b.loan ? `Lent · ${b.loan.to}` : onBench.has(b.id) ? "On the bench" : st;
     return `<button class="crow" type="button" role="listitem" data-find="${esc(b.id)}">${miniCover(b)}
       <span class="txt"><b>${marked(b.title, q)}</b><small>${marked(b.author || "", q)}${ser ? ` · ${marked(ser, q)}` : ""}</small></span><span class="where">${esc(where)}</span></button>`;
   }).join("");
@@ -1863,7 +1911,7 @@ addEventListener("keydown", e => {                     // "/" opens the search f
 
 // ---- sort and filter
 function renderArrange() {
-  const count = k => library.filter(b => !k || b.shelf === k).length;
+  const count = k => library.filter(b => !k || (k === "lent" ? !!b.loan : b.shelf === k)).length;
   $("filterChips").innerHTML = FILTERS.map(([k, l]) =>
     `<button class="chip" type="button" data-filter="${k}" aria-pressed="${prefs.filter === k}">${l}<small>${count(k)}</small></button>`).join("");
   $("orderChips").innerHTML = ORDERS.map(([k, l]) =>
@@ -1884,6 +1932,48 @@ function coverHtml(b) {
 }
 const statusSeg = cur => `<div class="seg" role="group" aria-label="Reading status">${STATUS.map(([k, l]) =>
   `<button type="button" data-status="${k}" aria-pressed="${cur === k}">${l}</button>`).join("")}</div>`;
+// ---- lending: b.loan = { to, on: "YYYY/MM/DD", note } while it's away; returned loans go to b.loans with a back date
+let lendOpen = false;
+const parseDay = d => { const m = String(d || "").match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const isoDay = d => d.replace(/\//g, "-"), slashDay = d => String(d || "").replace(/-/g, "/");
+function agoText(d) {
+  const t = parseDay(d); if (!t) return "";
+  const n = Math.round((new Date().setHours(0, 0, 0, 0) - t) / 864e5);
+  return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 14 ? `${n} days ago` : n < 61 ? `${Math.round(n/7)} weeks ago` : n < 730 ? `${Math.round(n/30.4)} months ago` : `${Math.round(n/365)} years ago`;
+}
+const dayText = d => { const t = parseDay(d); return t ? t.toLocaleDateString([], { day: "numeric", month: "short", year: t.getFullYear() === new Date().getFullYear() ? undefined : "numeric" }) : ""; };
+const friends = () => [...new Set(library.flatMap(b => [b.loan?.to, ...(b.loans || []).map(l => l.to)]).filter(Boolean))].sort((a, c) => a.localeCompare(c));
+function loanHtml(b) {
+  const hist = (b.loans || []).slice(-3).reverse().map(l => `${esc(l.to)} (${dayText(l.on)}${l.back && l.back !== l.on ? `–${dayText(l.back)}` : ""})`).join(", ");
+  if (b.loan && !lendOpen) return `<div class="loan"><p>Lent to <b>${esc(b.loan.to)}</b></p><small>${dayText(b.loan.on)} · ${agoText(b.loan.on)}</small>
+      ${b.loan.note ? `<p class="note">${esc(b.loan.note)}</p>` : ""}
+      <div class="trow"><button type="button" class="btn" id="lendEdit">Edit</button><button type="button" class="btn primary" id="lendBack">It's back</button></div></div>
+      ${hist ? `<p class="lendhist">Lent before: ${hist}</p>` : ""}`;
+  if (!lendOpen) return `<button type="button" class="btn wide" id="lendBtn">Lend to a friend</button>${hist ? `<p class="lendhist">Lent before: ${hist}</p>` : ""}`;
+  const l = b.loan || {};
+  return `<div class="loan"><div class="lendform sg">
+      <label class="wide2">Lent to<input id="lendTo" type="text" list="friendList" autocomplete="off" autocapitalize="words" placeholder="Friend's name" value="${esc(l.to || "")}"></label>
+      <datalist id="friendList">${friends().map(f => `<option value="${esc(f)}">`).join("")}</datalist>
+      <label>On<input id="lendOn" type="date" value="${esc(isoDay(l.on || today()))}" max="${esc(isoDay(today()))}"></label>
+      <label>Note<input id="lendNote" type="text" autocomplete="off" placeholder="Optional" value="${esc(l.note || "")}"></label>
+      <div class="trow"><button type="button" class="btn" id="lendCancel">Cancel</button><button type="button" class="btn primary" id="lendSave">${b.loan ? "Save" : "Lend it"}</button></div>
+    </div></div>`;
+}
+function saveLoan(b) {
+  const to = $("lendTo").value.trim().replace(/\s+/g, " ");
+  if (!to) { $("lendTo").focus(); toast("Who's borrowing it?"); return; }
+  const was = b.loan, on = slashDay($("lendOn").value) || today(), note = $("lendNote").value.trim();
+  b.loan = { to: to.slice(0, 40), on, ...(note ? { note: note.slice(0, 140) } : {}) };
+  lendOpen = false; saveLib(); rebuildKeep(b.id);
+  if (!was) toast(`Lent to ${b.loan.to}. Its place on the shelf is kept.`);
+}
+function returnLoan(b) {
+  const l = b.loan; if (!l) return;
+  (b.loans = b.loans || []).push({ ...l, back: today() }); delete b.loan;
+  saveLib(); rebuildKeep(b.id);
+  toast(`“${b.title}” is back from ${l.to}.`, () => { b.loans.pop(); b.loan = l; saveLib(); rebuildKeep(b.id); });
+}
+
 // a rating in quarter stars: tap or drag along the stars (the value snaps up to the next quarter), arrow keys step
 // a quarter; tapping the rating it already has clears it
 const fmtR = v => v ? (Number.isInteger(v) ? String(v) : String(v).replace(/^0/, "")) : "";
@@ -1918,6 +2008,7 @@ $("bookbody").addEventListener("pointerup", e => {
 });
 $("bookbody").addEventListener("pointercancel", () => { if (rateDrag) { paintRate(rateDrag.el, rateDrag.was); rateDrag = null; } });
 $("bookbody").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.closest?.(".lendform") && openBook) { e.preventDefault(); return saveLoan(openBook.b); }
   const el = e.target.closest(".rate"); if (!el || !openBook) return;
   const cur = +openBook.b.myRating || 0, step = { ArrowRight: 0.25, ArrowUp: 0.25, ArrowLeft: -0.25, ArrowDown: -0.25 }[e.key];
   let v = step != null ? clamp(cur + step, 0, 5) : e.key === "Home" || e.key === "Delete" || e.key === "Backspace" ? 0 : e.key === "End" ? 5 : /^[0-5]$/.test(e.key) ? +e.key : null;
@@ -1935,6 +2026,7 @@ function renderCard() {
     ${(b.themes || []).length ? `<div class="themes">${b.themes.slice(0, 4).map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
     ${rt ? `<p class="read-time">Read for ${fmtDur(rt)} over ${ns === 1 ? "one sitting" : ns + " sittings"}</p>` : ""}
   </div></div>
+  <div class="cardctl" style="padding-top:4px">${loanHtml(b)}</div>
   <div class="cardctl">${statusSeg(b.shelf)}
     ${b.shelf === "currently-reading" ? (timer && timer.id === b.id ? `<button type="button" class="btn wide" id="cardTimer">Timing this book · open the hourglass</button>`
       : `<button type="button" class="btn wide" id="cardTimer">Start the reading timer</button>`) : ""}
@@ -1974,7 +2066,7 @@ function respine(id) {
   openBook = s; s.tOut = 1; s.out = 1; s.moved = true;
 }
 function showBook(s, instant) {
-  if (openBook && openBook !== s) openBook.tOut = 0;
+  if (openBook && openBook !== s) { openBook.tOut = 0; lendOpen = false; }
   setPanel(null);
   openBook = s; s.tOut = 1; if (instant || reduced) { s.out = 1; s.moved = true; }
   renderCard(); bookcard.classList.add("open"); syncNudges();
@@ -1982,7 +2074,7 @@ function showBook(s, instant) {
 }
 function closeBook(quiet) {
   if (!openBook) return;
-  openBook.tOut = 0; openBook = null; bookcard.classList.remove("open", "looking"); lookOpenFor = null; clearTimeout(lookT);
+  openBook.tOut = 0; openBook = null; bookcard.classList.remove("open", "looking"); lookOpenFor = null; lendOpen = false; clearTimeout(lookT);
   if (!quiet && mode === "shelf") shelfView(bay);
   else if (!quiet && mode === "room") { tYaw = 0; tPitch = 0; tZoom = 1; }
   syncNudges();
@@ -2014,6 +2106,14 @@ $("bookbody").addEventListener("click", e => {
     b.shelf = st.dataset.status; if (b.shelf === "read" && !b.dateRead) b.dateRead = today();
     saveLib(); const went = rebuildKeep(b.id);
     toast(`Marked ${STATUS_LONG[b.shelf].toLowerCase()}.` + (went === "shelf" ? ` “${b.title}” is back on the shelves.` : went === "bench" ? " It's on the window bench now." : ""));
+  } else if (e.target.id === "lendBtn" || e.target.id === "lendEdit") {
+    lendOpen = true; renderCard(); bookView(openBook); setTimeout(() => $("lendTo")?.focus(), 60);
+  } else if (e.target.id === "lendCancel") {
+    lendOpen = false; renderCard(); bookView(openBook);
+  } else if (e.target.id === "lendSave") {
+    saveLoan(b);
+  } else if (e.target.id === "lendBack") {
+    returnLoan(b);
   } else if (e.target.id === "cardTimer") {
     if (!timer) { timerPick = b.id; startTimer(b.id); }
     openTimer();
@@ -2157,6 +2257,8 @@ function tap(e) {
   if (timerOpen) return closeTimer();
   if (mode === "room" && !openBook) { const ch = pick(e, calendar.children); if (ch && ch.object.userData.calendar) return openCalendar(); }
   if (mode === "room" && !openBook && nearHourglass(e)) return openTimer();
+  const tag = lentTags.children.length && pick(e, lentTags.children);
+  if (tag) { const s = tag.object.userData.s; if (mode !== "shelf") { bay = s.bay; setMode("shelf"); } if (openBook === s) closeBook(); else { bay = s.bay; showBook(s); } return; }
   const furniture = Object.values(pieces).flatMap(p => p.meshes).filter(m => m.visible && m.userData.slot && !m.userData.hourglass);
   const hit = pick(e, [bookcaseMesh, ...bookMeshes, ...furniture]);
   if (!hit) { if (openBook) closeBook(); return; }
@@ -2365,7 +2467,7 @@ function addBook(b, { stay } = {}) {
   library.push(b); saveLib();
   if (stay) { buildShelves(); toast(`Added “${b.title}”.`); return true; }
   setPanel(null); rebuildKeep(b.id);
-  if (!shelved.some(o => o.b.id === b.id)) toast(prefs.filter ? `Added. It's hidden by the ${STATUS_LONG[prefs.filter]} filter.` : "Added. Your shelves are full, so it waits in The Shelf.");
+  if (!shelved.some(o => o.b.id === b.id)) toast(prefs.filter ? `Added. It's hidden by the ${FILTER_LONG[prefs.filter]} filter.` : "Added. Your shelves are full, so it waits in The Shelf.");
   return true;
 }
 // a found book, ready to add: title and author can be corrected, and the status chosen
