@@ -1461,7 +1461,7 @@ function updateCount() {
   syncNudges();
 }
 function setMode(m) {
-  closeCalendar(true); closeTimer(true);
+  closeCalendar(true); closeTimer(true); benchFocus = false;
   if (m !== "shelf") { closeBook(true); setPanel(null); dropLift(true); }
   mode = m;
   sheet.classList.toggle("open", m === "custom");
@@ -1591,6 +1591,7 @@ function renderCal() {
 }
 function openCalendar() {
   if (mode !== "room") setMode("room");
+  benchFocus = false;
   calOpen = true; calView = "month"; calY = new Date().getFullYear(); calM = new Date().getMonth();
   renderCal(); hideHint();
   aimAt(B(CAL_AT.x, CAL_AT.y, CAL_AT.z + 0.07), 4.4);        // close up on the calendar first, then its pages rise
@@ -1783,7 +1784,7 @@ function nearHourglass(e) {
 }
 function openTimer() {
   if (mode !== "room") setMode("room");
-  closeBook(true); closeCalendar(true);
+  closeBook(true); closeCalendar(true); benchFocus = false;
   timerOpen = true; timerStop = false; renderTimer(); hideHint();
   aimAt(B(HG.x, HG.y, HG.z + 0.10), 3.4, timersheet, 0.55);          // the hourglass sits in the space above the panel
   clearTimeout(timerT); timerT = setTimeout(() => { if (timerOpen) timersheet.classList.add("open"); }, reduced ? 0 : 900);
@@ -2073,11 +2074,23 @@ function showBook(s, instant) {
   renderCard(); bookcard.classList.add("open"); syncNudges();
   bookView(s);
 }
+// looking at the reading stack on the window seat from the room (a tap on it, before any book is chosen)
+let benchFocus = false;
+function focusBench() {
+  if (mode !== "room") setMode("room");
+  const top = shelved.filter(o => o.bench).reduce((z, o) => Math.max(z, o.bz + o.t), STACK.z);
+  benchFocus = true; roomView(); aimAt(B(STACK.x, STACK.y, (STACK.z + top) / 2), 3.2);
+  flashHint("tap a book to take it");
+}
+function flashHint(text) {
+  hint.textContent = text; hint.classList.add("show");
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => hint.classList.remove("show"), 2600);
+}
 function closeBook(quiet) {
   if (!openBook) return;
   openBook.tOut = 0; openBook = null; bookcard.classList.remove("open", "looking"); lookOpenFor = null; lendOpen = false; clearTimeout(lookT);
   if (!quiet && mode === "shelf") shelfView(bay);
-  else if (!quiet && mode === "room") { tYaw = 0; tPitch = 0; tZoom = 1; }
+  else if (!quiet && mode === "room") { if (benchFocus) focusBench(); else { tYaw = 0; tPitch = 0; tZoom = 1; } }
   syncNudges();
 }
 $("putback").addEventListener("click", () => closeBook());
@@ -2221,6 +2234,7 @@ canvas.addEventListener("pointermove", e => {
   if (!dragging) return;
   const dx = e.clientX - dragging.x, dy = e.clientY - dragging.y;
   if (holdT && Math.hypot(dx, dy) > 8) { clearTimeout(holdT); holdT = null; }
+  if (benchFocus && !openBook && Math.hypot(dx, dy) > 8) benchFocus = false;   // looking around: no longer at the stack
   if (lift) return moveLift(e);
   if (mode === "shelf") {
     if (openBook || panel) return;
@@ -2259,14 +2273,18 @@ function tap(e) {
   if (mode === "room" && !openBook) { const ch = pick(e, calendar.children); if (ch && ch.object.userData.calendar) return openCalendar(); }
   if (mode === "room" && !openBook && nearHourglass(e)) return openTimer();
   const tag = lentTags.children.length && pick(e, lentTags.children);
-  if (tag) { const s = tag.object.userData.s; if (mode !== "shelf") { bay = s.bay; setMode("shelf"); } if (openBook === s) closeBook(); else { bay = s.bay; showBook(s); } return; }
+  if (tag) { const s = tag.object.userData.s; if (mode !== "shelf") { bay = s.bay; setMode("shelf"); return; } if (openBook === s) closeBook(); else { bay = s.bay; showBook(s); } return; }
   const furniture = Object.values(pieces).flatMap(p => p.meshes).filter(m => m.visible && m.userData.slot && !m.userData.hourglass);
   const hit = pick(e, [bookcaseMesh, ...bookMeshes, ...furniture]);
-  if (!hit) { if (openBook) closeBook(); return; }
+  if (!hit) { if (openBook) closeBook(); else if (benchFocus) { benchFocus = false; tYaw = 0; tPitch = 0; tZoom = 1; } return; }
   const s = bookOf(hit);
-  if (s && s.bench) { if (openBook === s) closeBook(); else showBook(s); return; }
+  if (s && s.bench) {
+    if (openBook === s) return closeBook();
+    if (!benchFocus && !openBook) return focusBench();   // from the room: look at the stack first, then choose a book
+    return showBook(s);
+  }
   if (s) {
-    if (mode !== "shelf") { bay = s.bay; setMode("shelf"); }
+    if (mode !== "shelf") { bay = s.bay; setMode("shelf"); return; }   // from the room: walk up to that section, nothing taken out
     if (openBook === s) closeBook(); else { bay = s.bay; showBook(s); }
   } else if (hit.object === bookcaseMesh) {
     if (openBook) return closeBook();
