@@ -22,13 +22,12 @@ body { margin: 0; background: var(--night); color: var(--parchment); overflow: h
   font-family: var(--font-ui); -webkit-tap-highlight-color: transparent; }
 #stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #stage:active { cursor: grabbing; }
-/* soft lens vignette and a whisper of film grain, so the baked render reads like a photograph */
+/* soft lens vignette and a whisper of film grain, so the baked render reads like a photograph.
+   The grain holds still: animated, it re-scattered over the whole room several times a second and read as flashing. */
 .lens { position: fixed; inset: 0; pointer-events: none;
   background: radial-gradient(120% 90% at 50% 46%, transparent 55%, rgba(10,6,3,.55) 100%); }
-.grain { position: fixed; inset: -50%; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 1.2s steps(4) infinite; }
-@keyframes grain { 0%{transform:translate(0,0)} 25%{transform:translate(-3%,2%)} 50%{transform:translate(2%,-3%)} 75%{transform:translate(-2%,-1%)} 100%{transform:translate(0,0)} }
+.grain { position: fixed; inset: 0; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .veil { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--night);
   transition: opacity 1.6s ease; pointer-events: none; }
 .veil.gone { opacity: 0; }
@@ -366,7 +365,7 @@ body { margin: 0; background: var(--night); color: var(--parchment); overflow: h
 .goal.slim .bar { margin: 6px 0 6px; height: 6px; }
 .cday.timed i::after { content: ""; position: absolute; left: 6px; right: auto; width: 10px; bottom: -3px; height: 2px; border-radius: 1px; background: var(--ember); opacity: .7; }
 .cday i { position: relative; }
-@media (prefers-reduced-motion: reduce) { .grain, .flame { animation: none; } .sheet, .sheet.open { transition: none; } .readpill svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .flame { animation: none; } .sheet, .sheet.open { transition: none; } .readpill svg { animation: none; } }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap">
 
@@ -3954,12 +3953,10 @@ function frame() {
   camPos.lerp(tPos, reduced ? 1 : 0.075); base.lerp(tBase, reduced ? 1 : 0.075).normalize();
   camera.position.copy(camPos);
   if (Math.abs(camera.zoom - zoom) > 1e-4) { camera.zoom = zoom; camera.updateProjectionMatrix(); }
-  // a breath of sway, as if you were standing quite still (less of it when looking closely)
-  const sw = reduced ? 0 : 1 / zoom * (mode === "shelf" ? 0.5 : 1);
-  const sy = Math.sin(t * 0.21) * 0.006 * sw, sp = Math.sin(t * 0.17 + 1.3) * 0.004 * sw;
-  dir.copy(base).applyAxisAngle(up, -(yaw + sy));
+  // the view holds perfectly still unless you move it: an idle sway drifted the whole room and made fine edges shimmer
+  dir.copy(base).applyAxisAngle(up, -yaw);
   right.crossVectors(dir, up).normalize();
-  dir.applyAxisAngle(right, -(pitch + sp));
+  dir.applyAxisAngle(right, -pitch);
   camera.lookAt(dir.add(camera.position));
   for (let i = pops.length - 1; i >= 0; i--) {
     const p = pops[i], u = Math.min(1, (now - p.t0) / 380), s = 0.9 + 0.1 * easeBack(u);
