@@ -1324,7 +1324,7 @@ function buildShelves() {
   });
   // the bench stack, each book turned a little, as if put down by hand
   {
-    const stack = benchList().map(b => { const p = Math.max(60, +b.pages || 300), h = dims(b).h0;
+    const stack = benchList().filter(b => b.id !== readingNowId()).map(b => { const p = Math.max(60, +b.pages || 300), h = dims(b).h0;
       return { b, t: clamp(0.012 + p*0.00006, 0.013, 0.062), h, d: Math.min(h*0.68, 0.23) }; }).sort((a, b) => b.h*b.d - a.h*a.d);
     let zb = STACK.z;
     for (const k of stack) {
@@ -1344,6 +1344,7 @@ function buildShelves() {
     }
   }
 
+  syncOpenBook();                                        // the book being read, open on the seat
   // spines, one atlas cell per book sized to its proportions
   // beside each spine atlas, a cover atlas: each book's front-cover picture, painted in as it arrives
   const atlases = []; let at = null;
@@ -1752,20 +1753,28 @@ function startTimer(id) {
   if (b.shelf !== "currently-reading") { b.shelf = "currently-reading"; saveLib(); buildShelves(); }
   timer = { id, t0: Date.now(), cycle: 0 }; timerStop = false; saveTimer();
   try { localStorage.setItem(TIMER_KEY + ".last", id); } catch (e) {}
+  buildShelves();                                        // it comes off the stack and lies open on the seat
   sandRest = 0; drawSand(0); flipHourglass();
   syncPill(); renderTimer();
   toast(`Timing “${b.title}”. Enjoy.`);
+  // let the hourglass turn over, then step back to see the room
+  clearTimeout(roomT); roomT = setTimeout(() => {
+    if (!timer) return;
+    if (timerOpen) closeTimer(); else if (mode !== "room") setMode("room"); else { tYaw = 0; tPitch = 0; tZoom = 1; }
+  }, reduced ? 0 : 1100);
 }
+let roomT = 0;
 function stopTimer(save, mins) {
   if (!timer) return;
   const b = library.find(x => x.id === timer.id), t = timer, secs = elapsed(), top = hgFlip ? 1 : 1 - (secs % HG_CYCLE) / HG_CYCLE;
   timer = null; timerStop = false; saveTimer(); sandRest = Math.min(1, Math.max(0, top)); sandShown = null; syncPill();
+  clearTimeout(roomT); buildShelves();                   // the book closes and goes back on the stack
   if (save && b) {
     const d = Math.round(Math.max(1, mins || secs / 60) * 60), x = { s: t.t0, d };
     (b.sessions = b.sessions || []).push(x); saveLib();
     if (openBook && openBook.b.id === b.id) renderCard();
     toast(`${fmtDur(d)} read of “${b.title}”.`, () => { b.sessions = b.sessions.filter(o => o !== x); saveLib(); if (openBook && openBook.b.id === b.id) renderCard(); });
-  } else if (b) toast("Sitting discarded.", () => { timer = t; saveTimer(); syncPill(); });
+  } else if (b) toast("Sitting discarded.", () => { timer = t; saveTimer(); syncPill(); buildShelves(); });
   renderTimer();
 }
 function syncPill() {
@@ -1805,6 +1814,112 @@ timersheet.addEventListener("click", e => {
   else if (e.target.id === "tSave") { const m = parseFloat($("tMins").value); stopTimer(true, isFinite(m) && m > 0 ? Math.min(m, 1440) : 0); }
   else if (e.target.id === "tDiscard") stopTimer(false);
 });
+
+// ---- the book you're reading, open on the window seat while the hourglass runs. Two pages arching up from the gutter
+// over the page blocks, cloth boards beneath, a ribbon marker over the edge, its text running towards you.
+const OPEN_AT = { x: 0.42, y: 1.44, z: 0.577 }, OPEN_W = 0.13, OPEN_D = 0.20;
+let openOnBench = null;
+function readingNowId() { try { return timer ? timer.id : null; } catch (e) { return null; } }   // (before the timer code has run)
+function pageCanvas(b) {
+  const W = 1024, H = 760, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+  let seed = hash(b.id + "pages"); const rnd = () => ((seed = Math.imul(seed ^ (seed >>> 15), 2246822507) ^ Math.imul(seed ^ (seed >>> 13), 3266489909)) >>> 0) / 4294967296;
+  g.fillStyle = "#efe6d0"; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 5000; i++) { g.fillStyle = `rgba(120,90,50,${Math.random()*0.045})`; g.fillRect(Math.random()*W, Math.random()*H, 2, 2); }
+  const gut = g.createLinearGradient(W/2 - 150, 0, W/2 + 150, 0);   // the gutter, shadowed where the pages turn down
+  gut.addColorStop(0, "rgba(70,45,20,0)"); gut.addColorStop(0.42, "rgba(70,45,20,.16)"); gut.addColorStop(0.5, "rgba(50,30,15,.42)");
+  gut.addColorStop(0.58, "rgba(70,45,20,.16)"); gut.addColorStop(1, "rgba(70,45,20,0)"); g.fillStyle = gut; g.fillRect(0, 0, W, H);
+  for (const [x, a] of [[0, 1], [W, -1]]) {                   // the fore-edges a touch darker, handled
+    const e = g.createLinearGradient(x, 0, x + a*60, 0); e.addColorStop(0, "rgba(90,60,30,.18)"); e.addColorStop(1, "rgba(90,60,30,0)"); g.fillStyle = e; g.fillRect(Math.min(x, x + a*60), 0, 60, H);
+  }
+  g.fillStyle = "rgba(42,30,20,.6)";
+  for (const p of [0, 1]) {
+    const x0 = p ? W/2 + 72 : 66, x1 = p ? W - 66 : W/2 - 72;
+    g.font = "italic 500 17px 'Cormorant Garamond', Georgia, serif"; g.textAlign = "center";
+    g.fillText(String(p ? b.title : b.author || "").slice(0, 40), (x0 + x1)/2, 58);
+    g.fillText(String(100 + (hash(b.id) % 300)*2 + p), (x0 + x1)/2, H - 34);
+    let y = 96, indent = true;
+    while (y < H - 70) {
+      let x = x0 + (indent ? 26 : 0), end = rnd() < 0.12 ? x0 + (x1 - x0)*(0.3 + rnd()*0.5) : x1;
+      while (x < end - 14) { const w = Math.min(end - x, 14 + rnd()*52); g.fillRect(x, y - 6, w, 7); x += w + 8; }
+      indent = end < x1; y += 21;
+    }
+  }
+  return c;
+}
+function syncOpenBook() {
+  if (openOnBench) {
+    scene.remove(openOnBench);
+    openOnBench.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.map?.dispose(); o.material.dispose(); } });
+    openOnBench = null;
+  }
+  const id = readingNowId(), b = id && library.find(x => x.id === id);
+  if (!b) return;
+  const grp = new THREE.Group(), W = OPEN_W, D = OPEN_D, BT = 0.004;
+  const pages = Math.max(60, +b.pages || 300), T = clamp(0.006 + pages*0.000018, 0.008, 0.02);   // each half's page block
+  const h = u => 0.004 + (T - 0.004)*Math.sin(Math.PI/2*Math.min(1, u/0.35)) + 0.006*Math.sin(Math.PI*u);
+  const X = (side, u) => side*W*(u - 0.05*Math.sin(Math.PI*u));
+  const light = new THREE.Vector3(-0.35, 0.85, 0.4).normalize();
+  // the pages: one surface across both, gutter in the middle
+  const NU = 26, NV = 8, pos = [], uv = [], idx = [];
+  for (let i = 0; i <= 2*NU; i++) {
+    const t = i/NU - 1, side = t < 0 ? -1 : 1, u = Math.abs(t);
+    for (let j = 0; j <= NV; j++) {
+      const v = j/NV;
+      pos.push(X(side, u), BT + h(u), (0.5 - v)*D);
+      uv.push(0.5 + t*0.5, v);
+    }
+  }
+  for (let i = 0; i < 2*NU; i++) for (let j = 0; j < NV; j++) {
+    const a = i*(NV + 1) + j, c = a + NV + 1; idx.push(a, c, a + 1, a + 1, c, c + 1);
+  }
+  const pg = new THREE.BufferGeometry(); pg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  pg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); pg.setIndex(idx); pg.computeVertexNormals();
+  const n = pg.attributes.normal, col = [];
+  for (let k = 0; k < n.count; k++) { const d = n.getX(k)*light.x + n.getY(k)*light.y + n.getZ(k)*light.z; const f = 0.62 + 0.42*Math.max(0, d); col.push(f, f, f); }
+  pg.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  const tex = new THREE.CanvasTexture(pageCanvas(b)); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = aniso;
+  const paper = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(0xb39f80), vertexColors: true, side: THREE.DoubleSide }));
+  // the page blocks' edges: head and tail (along the spread) and the two fore-edges
+  const ep = [], ei = [];
+  const quad = (a, b2, c, d) => { const k = ep.length/3; ep.push(...a, ...b2, ...c, ...d); ei.push(k, k + 1, k + 2, k, k + 2, k + 3); };
+  for (const z of [D/2, -D/2]) for (let i = 0; i < 2*NU; i++) {
+    const t0 = i/NU - 1, t1 = (i + 1)/NU - 1, s0 = t0 < 0 ? -1 : 1, s1 = t1 <= 0 ? -1 : 1;
+    const x0 = X(s0, Math.abs(t0)), x1 = X(s1, Math.abs(t1));
+    quad([x0, BT, z], [x1, BT, z], [x1, BT + h(Math.abs(t1)), z], [x0, BT + h(Math.abs(t0)), z]);
+  }
+  for (const side of [-1, 1]) { const x = X(side, 1); quad([x, BT, D/2], [x, BT, -D/2], [x, BT + h(1), -D/2], [x, BT + h(1), D/2]); }
+  const eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.Float32BufferAttribute(ep, 3)); eg.setIndex(ei);
+  const edges = new THREE.Mesh(eg, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x8c7d64), side: THREE.DoubleSide }));
+  // the boards, in the book's own cloth, a little proud of the pages
+  const cloth = new THREE.Color(colorOf(b)).multiplyScalar(0.42);
+  const boards = new THREE.Group();
+  for (const side of [-1, 1]) {
+    const bd = new THREE.Mesh(new THREE.BoxGeometry(W*1.06 + 0.006, BT, D + 0.012), new THREE.MeshBasicMaterial({ color: cloth }));
+    bd.position.set(side*(W*1.06 + 0.006)/2, BT/2, 0); boards.add(bd);
+  }
+  // a ribbon marker from the right-hand page, over the near edge and down onto the cushion
+  const rp = [], rw = 0.0035, ux = 0.14;
+  for (let j = 0; j <= 6; j++) { const v = 0.38*(1 - j/6); rp.push([X(1, ux), BT + h(ux) + 0.0006, (0.5 - v)*D]); }
+  rp.push([X(1, ux) + 0.004, BT*0.5, D/2 + 0.012], [X(1, ux) + 0.01, -0.004, D/2 + 0.03]);
+  const rq = [], rqi = [];
+  rp.forEach((p, k) => { rq.push(p[0] - rw, p[1], p[2], p[0] + rw, p[1], p[2]); if (k) { const a = (k - 1)*2; rqi.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } });
+  const rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.Float32BufferAttribute(rq, 3)); rg.setIndex(rqi);
+  const ribbon = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({ color: 0x5e1418, side: THREE.DoubleSide }));
+  // a soft shadow on the velvet
+  const sc = document.createElement("canvas"); sc.width = sc.height = 128; const sg = sc.getContext("2d");
+  const gr = sg.createRadialGradient(64, 64, 10, 64, 64, 64); gr.addColorStop(0, "rgba(0,0,0,.55)"); gr.addColorStop(.6, "rgba(0,0,0,.28)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+  sg.fillStyle = gr; sg.fillRect(0, 0, 128, 128);
+  const shade = new THREE.Mesh(new THREE.PlaneGeometry(W*2.6, D*1.5), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
+  shade.rotation.x = -Math.PI/2; shade.position.y = -0.001;
+  grp.add(shade, boards, edges, paper, ribbon);
+  for (const m of [paper, edges, ribbon, ...boards.children]) m.userData.openBook = true;
+  // lying on the seat, its foot towards you, settled a little into the velvet
+  grp.position.copy(B(OPEN_AT.x, OPEN_AT.y, OPEN_AT.z));
+  grp.rotation.order = "YXZ";
+  grp.rotation.y = Math.atan2(CAM.x - grp.position.x, CAM.z - grp.position.z) + 0.18;
+  grp.rotation.x = 0.04; grp.rotation.z = -0.03;
+  scene.add(grp); openOnBench = grp;
+}
 
 // ---- the reading goal: a number of books for the year, kept apart from the library (the shelf page rewrites that)
 let goals = {};
@@ -1877,7 +1992,7 @@ function renderFind() {
   note.textContent = hits.length ? (hits.length === 1 ? "One book." : `${hits.length} books${hits.length > shown20.length ? ` — the first ${shown20.length} shown` : ""}.`) : `Nothing on your shelves matches “${q.trim()}”.`;
   list.innerHTML = shown20.map(b => {
     const st = (STATUS.find(x => x[0] === b.shelf) || [0, ""])[1], ser = b.series ? `${b.series}${b.seriesNo ? ` #${b.seriesNo}` : ""}` : "";
-    const where = b.loan ? `Lent · ${b.loan.to}` : onBench.has(b.id) ? "On the bench" : st;
+    const where = b.loan ? `Lent · ${b.loan.to}` : b.id === readingNowId() ? "Open on the bench" : onBench.has(b.id) ? "On the bench" : st;
     return `<button class="crow" type="button" role="listitem" data-find="${esc(b.id)}">${miniCover(b)}
       <span class="txt"><b>${marked(b.title, q)}</b><small>${marked(b.author || "", q)}${ser ? ` · ${marked(ser, q)}` : ""}</small></span><span class="where">${esc(where)}</span></button>`;
   }).join("");
@@ -1895,6 +2010,7 @@ $("findList").addEventListener("click", e => {
 });
 function goToBook(id) {
   setPanel(null);
+  if (id === readingNowId()) { if (mode !== "room") setMode("room"); return openTimer(); }   // open on the seat, being timed
   let s = shelved.find(o => o.b.id === id);
   if (s && s.bench) { if (mode !== "room") setMode("room"); showBook(s); return; }   // the reading stack on the window seat
   if (mode !== "shelf") setMode("shelf");
@@ -2129,8 +2245,8 @@ $("bookbody").addEventListener("click", e => {
   } else if (e.target.id === "lendBack") {
     returnLoan(b);
   } else if (e.target.id === "cardTimer") {
-    if (!timer) { timerPick = b.id; startTimer(b.id); }
-    openTimer();
+    if (!timer) { timerPick = b.id; setMode("room"); startTimer(b.id); }
+    else openTimer();
   } else if (e.target.id === "lookBtn") {
     toggleLook(lookOpenFor !== b.id);
   } else if (e.target.id === "rmBook") {
@@ -2272,6 +2388,7 @@ function tap(e) {
   if (timerOpen) return closeTimer();
   if (mode === "room" && !openBook) { const ch = pick(e, calendar.children); if (ch && ch.object.userData.calendar) return openCalendar(); }
   if (mode === "room" && !openBook && nearHourglass(e)) return openTimer();
+  if (mode === "room" && !openBook && openOnBench && pick(e, openOnBench.children.flatMap(c => c.isMesh ? [c] : c.children).filter(m => m.userData.openBook))) return openTimer();
   const tag = lentTags.children.length && pick(e, lentTags.children);
   if (tag) { const s = tag.object.userData.s; if (mode !== "shelf") { bay = s.bay; setMode("shelf"); return; } if (openBook === s) closeBook(); else { bay = s.bay; showBook(s); } return; }
   const furniture = Object.values(pieces).flatMap(p => p.meshes).filter(m => m.visible && m.userData.slot && !m.userData.hourglass);
