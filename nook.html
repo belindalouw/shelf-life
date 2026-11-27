@@ -1925,198 +1925,479 @@ function edgeInk(img, src, sw) {
   edgeTone.set(src, ink); return ink;
 }
 
-// ---- the cover's own lettering on its spine. Text recognition (Tesseract, run on the phone, no account or server) finds
-// where the title and author are printed on the cover; that lettering is lifted off its background and laid along the
-// spine. Only when every main word of the title is found: otherwise the spine keeps the printed font, never half a title.
-const LET_V = 3, TESS = "https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js";
+// ---- the cover's own lettering on its spine. The app finds it on the cover by itself, with nothing to download and no
+// server: printed letters are shapes of one colour that stand apart from what's behind them, of a size, standing in a row.
+// Of the rows on a cover, the ones whose letters add up to the title (and to the author's name) are taken; that lettering
+// is lifted off its background and laid along the spine. When no rows add up to the title, the spine keeps the printed font.
+const LET_V = 5;
 const bigCover = u => String(u || "").replace(/-M\.jpg/, "-L.jpg");      // Open Library's larger picture reads better
-const LET_STOP = new Set("a an the of and to in on for at by with from or".split(" "));
-const letTokens = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
-function within1(a, b) {                                   // equal, or one letter off (for words of five letters or more)
-  if (a === b) return true;
-  if (Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
-  let i = 0, j = 0, e = 0;
-  while (i < a.length && j < b.length) { if (a[i] === b[j]) { i++; j++; continue; } if (++e > 1) return false;
-    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } }
-  return e + (a.length - i) + (b.length - j) <= 1;
-}
+const letChars = t => (String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[a-z0-9&]/gi) || []).length;
+const letWords = t => String(t || "").split(/[\s\u2013\u2014-]+/).filter(w => letChars(w)).length;
 const loadImg = u => new Promise((res, rej) => { const i = new Image(); i.crossOrigin = "anonymous";
   const t = setTimeout(() => rej(new Error("slow")), 20000);
   i.onload = () => { clearTimeout(t); i.naturalWidth > 40 ? res(i) : rej(new Error("blank")); }; i.onerror = () => { clearTimeout(t); rej(new Error("load")); }; i.src = u; });
-let ocrW = null;
-function ocrWorker() {
-  if (!ocrW) ocrW = (async () => {
-    if (!window.Tesseract) await new Promise((r, j) => { const sc = document.createElement("script"); sc.src = TESS; sc.onload = r; sc.onerror = j; document.head.appendChild(sc); });
-    return Tesseract.createWorker("eng");
-  })().catch(e => { ocrW = null; throw e; });
-  return ocrW;
-}
-// where the title and the author's surname are printed, as fractions of the cover (null when not found)
-async function findLettering(b, img) {
-  // catalogue covers are small (often 330 px tall): enlarged, the letters are big enough to read. A second look with the
-  // colours inverted catches pale lettering on dark covers, which the reader often misses.
-  const k = 1100/img.naturalHeight, W = Math.round(img.naturalWidth*k), H = 1100;
-  const worker = await ocrWorker();
-  let lineN = 0;
-  const read = async filter => {
-    const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
-    if (filter) g.filter = filter; g.drawImage(img, 0, 0, W, H);
-    const { data } = await worker.recognize(c, {}, { blocks: true }), out = [];
-    for (const bl of data.blocks || []) for (const p of bl.paragraphs || []) for (const l of p.lines || []) { const line = { id: lineN++, ...l.bbox };
-      for (const w of l.words || []) { const t = letTokens(w.text).join(""); if (t && w.confidence >= 45) out.push({ t, ...w.bbox, line, used: false }); } }
-    return out;
-  };
-  const all = letTokens(b.title.split(/[:(]/)[0]), main = all.filter(t => !LET_STOP.has(t)), want = main.length ? main : all;
-  let words = await read("");
-  if (!want.every(t => words.some(w => within1(w.t, t)))) {
-    const inv = await read("grayscale(1) invert(1) contrast(1.4)");
-    if (want.every(t => inv.some(w => within1(w.t, t)))) words = inv;
-    else words = words.concat(inv.filter(w => !words.some(o => o.t === w.t)));   // at least the author, from either look
+const letMed = v => v.slice().sort((p, q) => p - q)[v.length >> 1];
+const letIou = (p, q) => { const ix = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0) + 1, iy = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0) + 1;
+  if (ix <= 0 || iy <= 0) return 0; const I = ix*iy, ar = r => (r.x1 - r.x0 + 1)*(r.y1 - r.y0 + 1); return I/(ar(p) + ar(q) - I); };
+// rows of letters on a cover. The cover is cut at a range of brightnesses, for light lettering on dark and dark on light;
+// at each cut, the shapes that could be letters are kept: tall enough, drawn in strokes, clear of the cover's edge. A
+// letter holds its shape over several cuts (a pattern in the artwork doesn't), so each letter is taken at the middle of
+// the cuts it holds over: lettering over a light patch of the picture comes clear at its own cut. Then the letters that
+// stand in a row (about the same size, level, close, one colour) make a row.
+// reading a cover takes a tenth of a second or so, so it is done in slices between frames and the room keeps moving
+let letSlice = 0;
+const letPause = () => performance.now() - letSlice < 10 ? null : new Promise(r => setTimeout(() => { letSlice = performance.now(); r(); }, 0));
+async function letterRows(img) {
+  const k = Math.min(1, 400/img.naturalHeight), W = Math.max(16, Math.round(img.naturalWidth*k)), H = Math.max(16, Math.round(img.naturalHeight*k));
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const cg = cv.getContext("2d", { willReadFrequently: true }); cg.drawImage(img, 0, 0, W, H);
+  const d = cg.getImageData(0, 0, W, H).data, N = W*H, lum = new Uint8Array(N);
+  for (let i = 0; i < N; i++) lum[i] = (d[i*4]*77 + d[i*4+1]*150 + d[i*4+2]*29) >> 8;
+  const par = new Int32Array(N), slot = new Int32Array(N), on = new Uint8Array(N);
+  const find = i => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+  const unite = (a, c) => { a = find(a); c = find(c); if (a !== c) { if (a < c) par[c] = a; else par[a] = c; } };
+  const hMin = Math.max(6, 0.022*H), hMax = 0.3*H, glyphs = [];
+  for (const pol of [1, -1]) {
+    let prev = null;
+    for (let t = 24; t <= 232; t += 16) {
+      { const p = letPause(); if (p) await p; }
+      for (let i = 0; i < N; i++) on[i] = pol > 0 ? lum[i] >= t : lum[i] < t;
+      for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) {
+        if (!on[i]) continue;
+        par[i] = i;
+        if (x > 0 && on[i-1]) unite(i, i-1);
+        if (y > 0) { const u = i - W; if (on[u]) unite(i, u); if (x > 0 && on[u-1]) unite(i, u-1); if (x < W-1 && on[u+1]) unite(i, u+1); }
+      }
+      slot.fill(-1); const S = [];                                          // each shape: area, box, edge length, colour
+      for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) {
+        if (!on[i]) continue;
+        const r = find(i); let s = slot[r];
+        if (s < 0) { s = slot[r] = S.length; S.push([0, x, y, x, y, 0, 0, 0, 0, r]); }
+        const o = S[s]; o[0]++; if (x < o[1]) o[1] = x; if (x > o[3]) o[3] = x; o[4] = y;
+        o[6] += d[i*4]; o[7] += d[i*4+1]; o[8] += d[i*4+2];
+        if (x === 0 || y === 0 || x === W-1 || y === H-1 || !on[i-1] || !on[i+1] || !on[i-W] || !on[i+W]) o[5]++;
+      }
+      const gl = [];
+      // a shape's outline, to set beside the letters it might be, and its holes (A, O and R have one, B two): the
+      // background it closes in
+      const shapeOf = (root, x0, y0, x1, y1) => {
+        const w = x1 - x0 + 3, h = y1 - y0 + 3, m = new Uint8Array(w*h), st = [];
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const i = y*W + x; if (on[i] && find(i) === root) m[(y - y0 + 1)*w + x - x0 + 1] = 1; }
+        const desc = letDesc((x, y) => m[(y + 1)*w + x + 1] === 1, x1 - x0 + 1, y1 - y0 + 1);
+        const flood = (j0, mark) => { let a = 0; st.push(j0); m[j0] = mark;
+          while (st.length) { const j = st.pop(), x = j % w; a++;
+            for (const q of [x > 0 ? j - 1 : -1, x < w - 1 ? j + 1 : -1, j - w, j + w]) if (q >= 0 && q < w*h && !m[q]) { m[q] = mark; st.push(q); } }
+          return a; };
+        flood(0, 2);
+        let n = 0; const minA = Math.max(2, 0.004*(y1 - y0 + 1)**2);
+        for (let j = 0; j < w*h; j++) if (!m[j] && flood(j, 3) >= minA) n++;
+        return { holes: n, desc };
+      };
+      for (const [a, x0, y0, x1, y1, p, r, g, bl, root] of S) {
+        const w = x1 - x0 + 1, h = y1 - y0 + 1;
+        if (h < hMin || h > hMax || a < 12 || w > 0.92*W || x0 === 0 || y0 === 0 || x1 === W-1 || y1 === H-1) continue;
+        const fill = a/(w*h);
+        if (2*a/p > 0.36*h || w > 6*h || fill < 0.1 || (fill > 0.93 && h < 2.5*w && w < 3*h)) continue;   // a blob, a rule, a scatter
+        gl.push({ x0, y0, x1, y1, w, h, a, col: [r/a, g/a, bl/a], t, pol, chain: null, ...shapeOf(root, x0, y0, x1, y1) });
+      }
+      gl.sort((p, q) => p.x0 - q.x0);
+      // carry each shape's run on from the cut before, when it is the same shape
+      if (prev) for (const A of prev) {
+        let best = null, bi = 0.7;
+        for (const B of gl) { if (B.x0 > A.x1) break; if (B.x1 < A.x0 || B.chain) continue; const v = letIou(A, B); if (v > bi) { bi = v; best = B; } }
+        if (best) { best.chain = A.chain; A.chain.push(best); }
+      }
+      for (const B of gl) if (!B.chain) { B.chain = [B]; glyphs.push(B.chain); }
+      prev = gl;
+    }
   }
-  const pick = tokens => { const got = [];
-    for (const t of tokens) { const w = words.filter(w => !w.used && within1(w.t, t)).sort((a, b) => (b.y1 - b.y0) - (a.y1 - a.y0))[0];
-      if (!w) return null; w.used = true; got.push(w); }
-    return got; };
-  const norm4 = (x0, y0, x1, y1, pad) => [Math.max(0, x0 - pad)/W, Math.max(0, y0 - pad)/H, Math.min(W, x1 + pad)/W, Math.min(H, y1 + pad)/H];
-  // each printed line of the title that holds one of its words, whole (so small words beside them come too), top to bottom;
-  // the gaps between them, and the line above when the title starts with "A" or "The", may hold the small words set on a
-  // line of their own: those are offered as optional ("maybe") and kept only if lettering is found there
-  const titleBoxes = ws => {
-    const lines = [...new Map(ws.map(w => [w.line.id, w.line])).values()].sort((a, b) => a.y0 - b.y0);
-    const mh = lines.map(l => l.y1 - l.y0).sort((a, b) => a - b)[lines.length >> 1], pad = 0.12*mh;
-    const bx0 = Math.min(...lines.map(l => l.x0)), bx1 = Math.max(...lines.map(l => l.x1)), out = [];
-    if (LET_STOP.has(all[0]) && !main.includes(all[0]) && lines[0].y0 > 0.6*mh)
-      out.push({ b: norm4(bx0, lines[0].y0 - 1.15*mh, bx1, lines[0].y0 - 0.05*mh, 0), maybe: true });
-    lines.forEach((l, i) => {
-      const prev = lines[i - 1];
-      if (prev && l.y0 - prev.y1 > 0.35*mh) out.push({ b: norm4(bx0, prev.y1, bx1, l.y0, 0), maybe: true });
-      out.push({ b: norm4(l.x0, l.y0, l.x1, l.y1, pad) });
-    });
-    return out;
-  };
-  const tw = pick(want);
-  const surname = letTokens(b.author).pop(), aw = surname && surname !== "author" ? pick([surname]) : null;
-  const al = aw && aw[0].line, ah = al ? al.y1 - al.y0 : 0;
-  return { cover: coverKey(coverSrc(b)), v: LET_V, title: tw ? titleBoxes(tw) : null, author: al ? norm4(al.x0, al.y0, al.x1, al.y1, 0.12*ah) : null };
+  // the letters: shapes held over two cuts or more, each at its middle cut. A shape inside a bigger one of the other
+  // kind is the hole in a letter (the middle of an O); a shape that takes in two letters is those letters run together;
+  // of the rest that overlap, the one held longer.
+  let held = glyphs.filter(c => c.length >= 2).map(c => ({ ...c[(c.length - 1) >> 1], hold: c.length, chain: null }));
+  const within = (p, q) => p.x0 >= q.x0 - 1 && p.x1 <= q.x1 + 1 && p.y0 >= q.y0 - 1 && p.y1 <= q.y1 + 1;
+  held = held.filter(g => !held.some(o => o.pol !== g.pol && o.h > 1.15*g.h && within(g, o)));
+  held = held.filter(g => held.filter(o => o !== g && o.pol === g.pol && o.h >= 0.45*g.h && within(o, g)).length < 2);
+  held.sort((p, q) => q.hold - p.hold || q.h - p.h);
+  const lets = [], over = (p, q) => Math.max(0, Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0) + 1)*Math.max(0, Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0) + 1);
+  for (const g of held) if (!lets.some(o => over(o, g) > 0.3*Math.min(o.w*o.h, g.w*g.h))) lets.push(g);
+  // letters in a row: about the same size, overlapping in height, close, one colour
+  lets.sort((p, q) => p.x0 - q.x0);
+  const lp = lets.map((_, i) => i), lf = i => { while (lp[i] !== i) { lp[i] = lp[lp[i]]; i = lp[i]; } return i; };
+  for (let i = 0; i < lets.length; i++) { const A = lets[i];
+    for (let j = i + 1; j < lets.length; j++) { const B = lets[j], gap = B.x0 - A.x1;
+      if (gap > 2.5*A.h) break;
+      const lo = Math.min(A.h, B.h), hi = Math.max(A.h, B.h);
+      if (A.pol !== B.pol || hi > 2.2*lo || gap > 1.1*hi || gap < -0.6*Math.min(A.w, B.w)) continue;
+      if (Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0) + 1 < 0.55*lo) continue;
+      if (Math.hypot(A.col[0] - B.col[0], A.col[1] - B.col[1], A.col[2] - B.col[2]) > 70) continue;
+      lp[lf(j)] = lf(i);
+    } }
+  const groups = new Map(), rows = [];
+  lets.forEach((s, i) => { const r = lf(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(s); });
+  for (const gs of groups.values()) {
+    const n = gs.length, hm = letMed(gs.map(s => s.h));
+    if (n === 1) continue;                                                // a shape alone isn't a row of letters
+    if (n >= 2) {                                                         // letters in a row share a baseline or a cap line
+      const bot = letMed(gs.map(s => s.y1)), top = letMed(gs.map(s => s.y0));
+      const offB = gs.filter(s => Math.abs(s.y1 - bot) > 0.14*hm).length, offT = gs.filter(s => Math.abs(s.y0 - top) > 0.14*hm).length;
+      if (Math.min(offB, offT) > Math.floor(n*0.25)) continue;
+    }
+    gs.sort((p, q) => p.x0 - q.x0);
+    const gaps = []; for (let i = 1; i < n; i++) gaps.push(gs[i].x0 - gs[i-1].x1);
+    const cut = Math.max(0.3*hm, 2*(gaps.length ? letMed(gaps) : 0) + 1), wl = [0];   // the letters in each word
+    let A = 0, R = 0, G = 0, Bl = 0, x0 = W, y0 = H, x1 = 0, y1 = 0;
+    gs.forEach((s, i) => { A += s.a; R += s.col[0]*s.a; G += s.col[1]*s.a; Bl += s.col[2]*s.a;
+      x0 = Math.min(x0, s.x0); y0 = Math.min(y0, s.y0); x1 = Math.max(x1, s.x1); y1 = Math.max(y1, s.y1);
+      s.ws = !i || gaps[i - 1] > cut; if (i && s.ws) wl.push(0);
+      wl[wl.length - 1] += s.w > 1.4*s.h ? Math.max(2, Math.round(s.w/(0.65*s.h))) : 1; });   // joined letters count by their width
+    rows.push({ pol: gs[0].pol, n: wl.reduce((s, v) => s + v, 0), wl, hm, x0, y0, x1, y1, ink: [R/A, G/A, Bl/A], lets: gs });
+  }
+  return { W, H, rows };
 }
-// lift a line of lettering off its background. The background is the colour round the edge of the box; the lettering is
-// what stands apart from it, and then only what shares the lettering's own colour (so artwork beside the type stays
-// behind). Of the bands of type in the box, the strongest is kept (a box can catch the edge of the line above or below).
-// Gives a canvas trimmed to the letters, in their own colours, or null. Remembered per cover and box.
-const letCache = new Map();
-function liftLettering(img, bx, hint = null) {
-  const key = img.src + "|" + bx.join(",") + "|" + (hint ? hint.map(Math.round).join(",") : "");
-  if (letCache.has(key)) return letCache.get(key);
+// words on one line set further apart than letters are joined back up into the line
+function letterLines(rows) {
+  const out = rows.slice();
+  for (let merged = true; merged;) {
+    merged = false;
+    for (const a of out) for (const c of out) {
+      if (a === c || a.pol !== c.pol || c.x0 < a.x0) continue;
+      const lo = Math.min(a.hm, c.hm), hi = Math.max(a.hm, c.hm), gap = c.x0 - a.x1;
+      if (hi > 1.3*lo || gap > 2.5*hi || gap < -0.3*hi || Math.min(a.y1, c.y1) - Math.max(a.y0, c.y0) < 0.6*Math.min(a.y1 - a.y0, c.y1 - c.y0)) continue;
+      if (Math.hypot(a.ink[0] - c.ink[0], a.ink[1] - c.ink[1], a.ink[2] - c.ink[2]) > 70) continue;
+      const n = a.n + c.n;
+      Object.assign(a, { n, wl: [...a.wl, ...c.wl], hm: (a.hm*a.n + c.hm*c.n)/n, x1: Math.max(a.x1, c.x1), y0: Math.min(a.y0, c.y0), y1: Math.max(a.y1, c.y1),
+        ink: a.ink.map((v, i) => (v*a.n + c.ink[i]*c.n)/n), lets: [...a.lets, ...c.lets] });
+      out.splice(out.indexOf(c), 1); merged = true; break;
+    }
+  }
+  return out;
+}
+// a shape's outline on a small grid, softened, so two shapes compare by one number: how alike they are (1 the same)
+const LET_GRID = 12;
+function letDesc(at, w, h) {
+  const N = LET_GRID, v = new Float32Array(N*N), u = new Float32Array(N*N);
+  for (let cy = 0; cy < N; cy++) { const ya = Math.floor(cy*h/N), yb = Math.max(ya + 1, Math.floor((cy + 1)*h/N));
+    for (let cx = 0; cx < N; cx++) { const xa = Math.floor(cx*w/N), xb = Math.max(xa + 1, Math.floor((cx + 1)*w/N));
+      let s = 0; for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) if (at(x, y)) s++;
+      v[cy*N + cx] = s/((yb - ya)*(xb - xa)); } }
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { let s = 0, wt = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx;
+      if (yy < 0 || xx < 0 || yy >= N || xx >= N) continue; const k = (2 - Math.abs(dx))*(2 - Math.abs(dy)); s += v[yy*N + xx]*k; wt += k; }
+    u[y*N + x] = s/wt; }
+  let mu = 0; for (let i = 0; i < u.length; i++) mu += u[i]; mu /= u.length;
+  let nn = 0; for (let i = 0; i < u.length; i++) { u[i] -= mu; nn += u[i]*u[i]; }
+  nn = Math.sqrt(nn) || 1; for (let i = 0; i < u.length; i++) u[i] /= nn;
+  return u;
+}
+// every letter and figure drawn in the typefaces the device has (a serif, a sans, bold and plain, a narrow one), upper
+// and lower case: what a shape on a cover is set beside. Drawn once.
+let letBank = null;
+function letTemplates() {
+  if (letBank) return letBank;
+  const S = 96, c = document.createElement("canvas"); c.width = c.height = S; const g = c.getContext("2d", { willReadFrequently: true });
+  const fams = ["serif", "sans-serif", "Georgia, serif", '"Cormorant Garamond", serif', 'Impact, "Arial Narrow", sans-serif'], chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  letBank = {}; for (const ch of chars) letBank[ch] = [];
+  for (const f of fams) for (const wt of [400, 800]) for (const up of [false, true]) {
+    const set = [];
+    for (const ch of chars) {
+      g.clearRect(0, 0, S, S); g.font = `${wt} 60px ${f}`; g.fillStyle = "#000"; g.textBaseline = "alphabetic"; g.fillText(up ? ch.toUpperCase() : ch, 18, 72);
+      const d = g.getImageData(0, 0, S, S).data; let x0 = S, y0 = S, x1 = -1, y1 = -1;
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (d[(y*S + x)*4 + 3] > 127) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 < 0) continue;
+      const w = x1 - x0 + 1, h = y1 - y0 + 1;
+      set.push({ ch, asp: w/h, desc: letDesc((x, y) => d[((y + y0)*S + x + x0)*4 + 3] > 127, w, h) });
+    }
+    const med = letMed(set.map(t => t.asp));
+    for (const t of set) letBank[t.ch].push({ desc: t.desc, slim: t.asp/med });
+  }
+  return letBank;
+}
+// how alike a shape is to a letter (its best likeness in any typeface, less for a shape far wider or narrower), and to
+// the letter it is most like. Worked out once per shape.
+function letSim(g, ch) {
+  if (!g.sim) {
+    const bank = letTemplates(); g.sim = {}; g.best = -1;
+    for (const c of Object.keys(bank)) { let s = -1;
+      for (const t of bank[c]) { let dot = 0; for (let i = 0; i < t.desc.length; i++) dot += t.desc[i]*g.desc[i];
+        const v = dot - 0.35*Math.abs(Math.log(g.slim/t.slim)); if (v > s) s = v; }
+      g.sim[c] = s; if (s > g.best) g.best = s; }
+  }
+  return ch in g.sim ? g.sim[ch] : g.best - 0.1;
+}
+// how the letters of a title look, near enough in any typeface: the holes they close in (upper or lower case), and the
+// ones that are thin strokes
+const LET_HOLES = { a: [1], b: [1, 2], d: [1], e: [0, 1], g: [0, 1, 2], o: [1], p: [1], q: [1], r: [0, 1], "0": [1], "4": [0, 1], "6": [1], "8": [2], "9": [1], "&": [0, 1, 2] };
+const LET_THIN = "il1j!|", LET_SLIM = "iljtf1rj!|";
+// a title or a name as the letters to look for, each marked where a word starts
+const letSpell = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[\s\u2013\u2014-]+/)
+  .flatMap(w => [...w.replace(/[^a-z0-9&]/g, "")].map((ch, i) => ({ ch, ws: !i })));
+// how far a run of shapes is from reading as the letters wanted, per letter: each shape is one letter (or two or three
+// run together), or isn't part of it; a letter not found costs so much that the reading fails. With trace, also which
+// shapes were read as letters.
+function letRead(G, C, trace) {
+  const n = G.length, m = C.length, M = m + 1, D = new Float64Array((n + 1)*M).fill(1e9); D[0] = 0;
+  const P = trace ? new Int32Array((n + 1)*M).fill(-1) : null, U = trace ? new Uint8Array((n + 1)*M) : null;
+  // one shape as one letter: it must look like that letter, about as much as like any
+  const one = (g, c) => {
+    let v = (LET_HOLES[c.ch] || [0]).includes(g.holes) ? 0 : 0.3;
+    if (g.slim < 0.45) return v + (LET_SLIM.includes(c.ch) ? 0 : 1.2);      // a thin stroke: I, l, 1
+    if (g.slim > 0.8 && LET_THIN.includes(c.ch)) v += 0.6;
+    const s = letSim(g, c.ch);
+    v += Math.min(1.5, 3*(g.best - s)) + (s < 0.45 ? 0.6 : 0);
+    if (g.est > 1.7) v += 0.5*(g.est - 1);
+    return v; };
+  for (let i = 0; i <= n; i++) for (let j = 0; j <= m; j++) {
+    const v = D[i*M + j]; if (v >= 1e9) continue;
+    const set = (a, b, c, used = 1) => { const q = a*M + b; if (c < D[q]) { D[q] = c; if (P) { P[q] = i*M + j; U[q] = used; } } };
+    if (i < n) set(i + 1, j, v + (G[i].mark ? 0.3 : 1.2), 0);                 // a shape that isn't part of it
+    if (j < m) set(i, j + 1, v + 6, 0);                                        // a letter not found
+    if (i < n && j < m && !G[i].mark) {
+      const g = G[i], wsCost = g.ws === C[j].ws ? 0 : 0.25;
+      set(i + 1, j + 1, v + wsCost + one(g, C[j]));
+      // two letters run together where they touch, within a word: a shape as tall as its neighbours and about two letters
+      // wide. (Joined-up writing can't be told from a flourish in the artwork, so a handwritten title keeps the printed
+      // font.)
+      if (j + 1 < m && !C[j + 1].ws && g.est >= 1.5 && g.est <= 2.8 && g.tall && letSim(g, C[j].ch) <= g.best && g.best < 0.7) {
+        let lo = 0, hi = 0; for (let q = j; q < j + 2; q++) { const hs = LET_HOLES[C[q].ch] || [0]; lo += Math.min(...hs); hi += Math.max(...hs); }
+        set(i + 1, j + 2, v + wsCost + 0.6 + 0.8*Math.abs(Math.log(2/g.est)) + (g.holes < lo || g.holes > hi ? 0.4 : 0));
+      }
+      if (i + 1 < n && !G[i + 1].ws && !G[i + 1].mark) set(i + 2, j + 1, v + wsCost + 0.8);   // a letter in two pieces
+    }
+  }
+  const e = D[n*M + m]/Math.max(1, m);
+  if (!trace) return e;
+  const used = new Set();
+  for (let q = n*M + m; q > 0 && P[q] >= 0; q = P[q]) if (U[q]) for (let i = Math.floor(P[q]/M); i < Math.floor(q/M); i++) used.add(G[i]);
+  return { e, used };
+}
+// where the title and the author's name are printed. The title: rows whose words have the title's letters word for word
+// (A Court of Mist and Fury: 1, 5, 2, 4, 3, 4) and whose letters, shape by shape, can be the title's, with none missing.
+// The author: of the other rows, the ones that read as the name. Without the whole title found, the spine keeps the
+// printed font.
+async function findLettering(b, img) {
+  const res = { cover: coverKey(coverSrc(b)), v: LET_V, title: null, author: null };
+  const main = b.title.split(/[:(]/)[0], want = letSpell(main), name = letSpell(b.author), surname = letSpell(String(b.author || "").split(/\s+/).pop());
+  const wantW = main.split(/[\s\u2013\u2014-]+/).map(letChars).filter(Boolean), nameW = String(b.author || "").split(/[\s.]+/).map(letChars).filter(Boolean);
+  if (!want.length) return res;
+  const { W, H, rows } = await letterRows(img), lines = letterLines(rows);
+  if (!lines.length) return res;
+  // each row's shapes in order, with how wide each is against the row's letters (a shape twice as wide is two letters)
+  for (const l of lines) {
+    l.lets.sort((p, q) => p.x0 - q.x0);
+    const asp = l.lets.filter(s => s.h >= 0.45*l.hm).map(s => s.w/s.h), med = asp.length >= 3 ? letMed(asp) : 0.75;
+    l.lets.forEach((s, i) => { s.mark = s.h < 0.45*l.hm; s.tall = s.h >= 0.8*l.hm; s.est = Math.max(1, (s.w/s.h)/med); s.slim = (s.w/s.h)/med; if (!i) s.ws = true; });
+  }
+  const big = Math.max(...lines.map(l => l.hm));
+  const cand = lines.filter(l => l.hm >= 0.2*big).sort((p, q) => q.hm*Math.sqrt(q.n) - p.hm*Math.sqrt(p.n)).slice(0, 14);
+  // reading order: top to bottom, and left to right along a line
+  const order = S => S.slice().sort((p, q) => (Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0) > 0.5*Math.min(p.y1 - p.y0, q.y1 - q.y0)) ? p.x0 - q.x0 : p.y0 - q.y0);
+  // a quick first look, word by word: how far the words' letter counts are from the ones wanted, per word
+  const mc = (a, c) => Math.abs(Math.log(a/c));
+  const align = (det, wnt) => {
+    const n = det.length, m = wnt.length, D = Array.from({ length: n + 2 }, () => new Float64Array(m + 2).fill(1e9)); D[0][0] = 0;
+    for (let i = 0; i <= n; i++) for (let j = 0; j <= m; j++) { const v = D[i][j]; if (v >= 1e9) continue;
+      if (j < m) D[i][j+1] = Math.min(D[i][j+1], v + 0.2 + 0.15*wnt[j]);
+      if (i < n) D[i+1][j] = Math.min(D[i+1][j], v + 0.5 + 0.05*det[i]);
+      if (i < n && j < m) D[i+1][j+1] = Math.min(D[i+1][j+1], v + mc(det[i], wnt[j]));
+      if (i < n && j + 1 < m) D[i+1][j+2] = Math.min(D[i+1][j+2], v + 0.15 + mc(det[i], wnt[j] + wnt[j+1]));
+      if (i + 1 < n && j < m) D[i+2][j+1] = Math.min(D[i+2][j+1], v + 0.15 + mc(det[i] + det[i+1], wnt[j]));
+    }
+    return D[n][m]/m;
+  };
+  const inkD = (p, q) => Math.hypot(p.ink[0] - q.ink[0], p.ink[1] - q.ink[1], p.ink[2] - q.ink[2]);
+  const apart = S => S.every((p, i) => S.every((q, j) => j <= i || letIou(p, q) === 0));
+  // rows read as one block: stacked close, overlapping across, one colour
+  const blockPen = S => {
+    const s = S.slice().sort((p, q) => p.y0 - q.y0); let pen = 0;
+    for (let i = 1; i < s.length; i++) { const p = s[i-1], q = s[i], hi = Math.max(p.hm, q.hm);
+      pen += Math.max(0, (q.y0 - p.y1)/hi - 1.4)*0.4;
+      if (Math.min(p.x1, q.x1) < Math.max(p.x0, q.x0) && q.y0 > p.y1) pen += 0.6;
+      if (p.pol !== q.pol) pen += 0.8; else if (inkD(p, q) > 80) pen += 0.4; }
+    return pen;
+  };
+  const subsets = (arr, max) => { const out = []; const go = (i, cur) => { if (cur.length) out.push(cur.slice()); if (cur.length === max) return;
+    for (let j = i; j < arr.length; j++) { cur.push(arr[j]); go(j + 1, cur); cur.pop(); } }; go(0, []); return out; };
+  const shapes = S => S.flatMap(l => l.lets);
+  // the author's rows, for any rows left over
+  const authorFor = rest => {
+    let au = null, auScore = 0;
+    if (name.length) for (const P0 of subsets(rest, 2)) {
+      if (!apart(P0)) continue;
+      const P = order(P0);
+      if (align(P.flatMap(l => l.wl), nameW) > 0.35 && align(P.flatMap(l => l.wl), nameW.slice(-1)) > 0.35) continue;
+      const G = shapes(P), ea = Math.min(letRead(G, name), letRead(G, surname) + 0.25);
+      if (ea > 0.3) continue;
+      const sc = 0.9 - 3*ea + 0.3*P.reduce((s, l) => s + l.hm, 0)/P.length/big - blockPen(P);
+      if (sc > auScore) { auScore = sc; au = P; }
+    }
+    return { au, auScore };
+  };
+  let best = null;
+  for (const S0 of subsets(cand, 6)) {
+    { const p = letPause(); if (p) await p; }
+    if (!apart(S0)) continue;
+    const S = order(S0);
+    if (align(S.flatMap(l => l.wl), wantW) > 0.35) continue;
+    const e = letRead(shapes(S), want);
+    if (e > 0.22) continue;
+    const { au, auScore } = authorFor(cand.filter(l => S.every(q => letIou(l, q) === 0)));
+    const score = 0.8*S.reduce((s, l) => s + l.hm, 0)/S.length/big - 4*e - blockPen(S) + auScore;
+    if (!best || score > best.score) best = { score, S, au, e };
+  }
+  if (!best) return res;
+  // each row as fractions of the cover: light or dark lettering, its letter height, and the box and cut of each shape
+  // read as a letter (whatever else stands in the row, a quote or an ornament, stays on the cover)
+  const r3 = v => Math.round(v*1e3)/1e3;
+  const keep = (S, used) => S.map(l => ({ pol: l.pol, h: r3(l.hm/H),
+    g: l.lets.filter(s => used.has(s)).map(s => [r3(s.x0/W), r3(s.y0/H), r3((s.x1 + 1)/W), r3((s.y1 + 1)/H), s.t]) })).filter(r => r.g.length);
+  res.title = keep(best.S, letRead(shapes(best.S), want, true).used); res.e = r3(best.e);
+  if (best.au) { const G = shapes(best.au), full = letRead(G, name, true), sur = letRead(G, surname, true);
+    res.author = keep(best.au, (full.e <= sur.e + 0.25 ? full : sur).used); }
+  return res;
+}
+// lift a row of lettering off the cover, letter by letter: each letter cut at its own brightness, in its own colours (a
+// gilt or silver gradient stays), with its dot or accent and soft edges. Each letter is kept to its own box, so a
+// neighbour it touches, a frame or the artwork stays behind. Gives a canvas trimmed to the letters, or null.
+// Remembered per picture.
+const letCache = new WeakMap(), letKey = r => r.pol + JSON.stringify(r.g);
+// a book's lifted rows if they're ready. If not, and the spine can be drawn again later, they are lifted a row at a time
+// between frames and later() is called when they're all ready; without later, they're lifted now.
+const letJobs = []; let letJobT = 0;
+function letLifted(img, rows, later) {
+  const memo = letCache.get(img);
+  if (!later || (memo && rows.every(r => memo.has(letKey(r))))) return rows.map(r => liftRow(img, r));
+  letJobs.push({ img, rows, later }); if (!letJobT) letJobT = setTimeout(letWork, 30);
+  return null;
+}
+function letWork() {
+  letJobT = 0; const t0 = performance.now();
+  while (letJobs.length && performance.now() - t0 < 10) {
+    const j = letJobs[0], memo = letCache.get(j.img), r = j.rows.find(r => !memo || !memo.has(letKey(r)));
+    if (r) { liftRow(j.img, r); continue; }
+    letJobs.shift(); j.later();
+  }
+  if (letJobs.length) letJobT = setTimeout(letWork, 16);
+}
+function liftRow(img, row) {
+  let memo = letCache.get(img); if (!memo) letCache.set(img, memo = new Map());
+  const key = letKey(row);
+  if (memo.has(key)) return memo.get(key);
   let out = null;
   try {
-    const iw = img.naturalWidth, ih = img.naturalHeight, sx = bx[0]*iw, sy = bx[1]*ih, sw = (bx[2] - bx[0])*iw, sh = (bx[3] - bx[1])*ih;
-    if (sw < 3 || sh < 3) throw 0;
-    const k = Math.max(1, Math.min(3, 160/sh)), cw = Math.max(4, Math.round(sw*k)), ch = Math.max(4, Math.round(sh*k));
+    const IW = img.naturalWidth, IH = img.naturalHeight, hm = row.h*IH, pad = 0.5*hm, G = row.g;
+    const rx0 = Math.max(0, Math.min(...G.map(p => p[0]))*IW - pad), ry0 = Math.max(0, Math.min(...G.map(p => p[1]))*IH - pad);
+    const rx1 = Math.min(IW, Math.max(...G.map(p => p[2]))*IW + pad), ry1 = Math.min(IH, Math.max(...G.map(p => p[3]))*IH + pad);
+    if (rx1 - rx0 < 3 || ry1 - ry0 < 3 || hm < 3) throw 0;
+    const k = Math.max(1, Math.min(4, 72/hm)), cw = Math.max(4, Math.round((rx1 - rx0)*k)), ch = Math.max(4, Math.round((ry1 - ry0)*k)), L = hm*k;
     const c = document.createElement("canvas"); c.width = cw; c.height = ch; const g = c.getContext("2d", { willReadFrequently: true });
-    g.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
-    const im = g.getImageData(0, 0, cw, ch), d = im.data, n = cw*ch;
-    const ring = []; for (let x = 0; x < cw; x++) ring.push(x, (ch - 1)*cw + x); for (let y = 0; y < ch; y++) ring.push(y*cw, y*cw + cw - 1);
-    const medOf = (idx, c2) => { const v = idx.map(i => d[i*4 + c2]).sort((a, b) => a - b); return v[v.length >> 1]; };
-    const bg = [0, 1, 2].map(c2 => medOf(ring, c2)), dist = new Float32Array(n);
-    for (let i = 0; i < n; i++) dist[i] = Math.hypot(d[i*4] - bg[0], d[i*4+1] - bg[1], d[i*4+2] - bg[2]);
-    const D = Array.from(dist).sort((a, b) => a - b)[Math.floor(n*0.93)];
-    if (D < 55) throw 0;
-    const a1 = new Float32Array(n), strong = [];
-    for (let i = 0; i < n; i++) { a1[i] = Math.max(0, Math.min(1, (dist[i] - 0.35*D)/(0.3*D))); if (a1[i] > 0.85) strong.push(i); }
-    if (strong.length < 8) throw 0;
-    let ink = [0, 1, 2].map(c2 => medOf(strong, c2)), cands = [{ col: ink, score: 1 }];
-    if (hint) ink = hint;
-    else {
-      const col = i => [d[i*4], d[i*4+1], d[i*4+2]], dd = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
-      let A = col(strong[0]), Bc = A; for (const i of strong) if (dd(col(i), A) > dd(Bc, A)) Bc = col(i);
-      const grp = new Int8Array(n).fill(-1);
-      for (let it = 0; it < 6; it++) {
-        const sum = [[0, 0, 0, 0], [0, 0, 0, 0]];
-        for (const i of strong) { const p = col(i), k2 = dd(p, A) <= dd(p, Bc) ? 0 : 1; grp[i] = k2; sum[k2][0] += p[0]; sum[k2][1] += p[1]; sum[k2][2] += p[2]; sum[k2][3]++; }
-        if (sum[0][3]) A = sum[0].slice(0, 3).map(v => v/sum[0][3]); if (sum[1][3]) Bc = sum[1].slice(0, 3).map(v => v/sum[1][3]);
+    g.drawImage(img, rx0, ry0, rx1 - rx0, ry1 - ry0, 0, 0, cw, ch);
+    const im = g.getImageData(0, 0, cw, ch), d = im.data, n = cw*ch, lum = new Float32Array(n), alpha = new Float32Array(n);
+    for (let i = 0; i < n; i++) lum[i] = 0.299*d[i*4] + 0.587*d[i*4+1] + 0.114*d[i*4+2];
+    const soft = 18, grow = Math.max(1, Math.round(0.05*L)), cm = Math.max(2, 0.08*L), minA = 0.004*L*L;
+    // the shapes at a cut within a rectangle of the canvas (8-connected), leaving out a rectangle inside it if given
+    const shapesIn = (x0, y0, x1, y1, t, skip) => {
+      const w = x1 - x0 + 1, h = y1 - y0 + 1, lab = new Int32Array(w*h).fill(-1), out = [], st = [];
+      const ok = j => { const x = j % w + x0, y = ((j/w)|0) + y0;
+        if (skip && x >= skip[0] && x <= skip[2] && y >= skip[1] && y <= skip[3]) return false;
+        const v = lum[y*cw + x]; return row.pol > 0 ? v >= t : v < t; };
+      for (let s = 0; s < w*h; s++) {
+        if (lab[s] >= 0 || !ok(s)) continue;
+        const o = { x0: w, y0: h, x1: 0, y1: 0, a: 0, px: [], side: false, edge: false }; lab[s] = out.length; out.push(o); st.push(s);
+        while (st.length) {
+          const j = st.pop(), x = j % w, y = (j/w)|0; o.a++; o.px.push((y + y0)*cw + x + x0);
+          if (x < o.x0) o.x0 = x; if (x > o.x1) o.x1 = x; if (y < o.y0) o.y0 = y; if (y > o.y1) o.y1 = y;
+          if (x === 0 || x === w - 1) o.side = o.edge = true; if (y === 0 || y === h - 1) o.edge = true;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx, ny = y + dy;
+            if ((!dx && !dy) || nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const q = ny*w + nx; if (lab[q] < 0 && ok(q)) { lab[q] = lab[s]; st.push(q); }
+          }
+        }
+        o.x0 += x0; o.x1 += x0; o.y0 += y0; o.y1 += y0;
       }
-      const size = [0, 0], edge = [0, 0];
-      for (const i of strong) { const k2 = grp[i], x = i % cw, y = (i/cw)|0; size[k2]++;
-        if (x > 0 && grp[i-1] !== k2 || x < cw-1 && grp[i+1] !== k2 || y > 0 && grp[i-cw] !== k2 || y < ch-1 && grp[i+cw] !== k2) edge[k2]++; }
-      if (dd(A, Bc) > 60 && Math.min(...size) > 0.12*strong.length) {
-        cands = [{ col: A, score: edge[0]/size[0] }, { col: Bc, score: edge[1]/size[1] }];
-        ink = cands[0].score >= cands[1].score ? A : Bc;
+      return out;
+    };
+    for (const [gx0, gy0, gx1, gy1, t] of G) {
+      const bx0 = (gx0*IW - rx0)*k, by0 = (gy0*IH - ry0)*k, bx1 = (gx1*IW - rx0)*k, by1 = (gy1*IH - ry0)*k;
+      const box = [Math.max(0, Math.floor(bx0 - cm)), Math.max(0, Math.floor(by0 - cm)), Math.min(cw - 1, Math.ceil(bx1 + cm)), Math.min(ch - 1, Math.ceil(by1 + cm))];
+      // the letter: the biggest shape in its box, and the pieces with it that don't come in from the side
+      const body = shapesIn(...box, t);
+      if (!body.length) continue;
+      const main = body.reduce((p, q) => q.a > p.a ? q : p);
+      const keep = body.filter(o => o === main || (!o.side && o.a >= minA));
+      // its dot or accent: a mark above or below it, clear of everything round it
+      const ext = [box[0], Math.max(0, Math.floor(by0 - 0.4*L)), box[2], Math.min(ch - 1, Math.ceil(by1 + 0.4*L))];
+      for (const o of shapesIn(...ext, t, box)) if (!o.edge && o.a >= minA && (o.y1 < box[1] || o.y0 > box[3])) keep.push(o);
+      const core = new Uint8Array(n); let cx0 = cw, cy0 = ch, cx1 = 0, cy1 = 0;
+      for (const o of keep) { for (const i of o.px) core[i] = 1; cx0 = Math.min(cx0, o.x0); cy0 = Math.min(cy0, o.y0); cx1 = Math.max(cx1, o.x1); cy1 = Math.max(cy1, o.y1); }
+      // round the letter, a soft edge from the brightness
+      for (let y = Math.max(0, cy0 - grow); y <= Math.min(ch - 1, cy1 + grow); y++) for (let x = Math.max(0, cx0 - grow); x <= Math.min(cw - 1, cx1 + grow); x++) {
+        const i = y*cw + x; let near = core[i] === 1;
+        for (let dy = -grow; dy <= grow && !near; dy++) for (let dx = -grow; dx <= grow && !near; dx++) {
+          const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < cw && ny < ch && core[ny*cw + nx]) near = true; }
+        if (!near) continue;
+        const v = lum[i], a = core[i] ? 1 : Math.max(0, Math.min(1, (row.pol > 0 ? v - (t - soft) : (t + soft) - v)/(2*soft)));
+        if (a > alpha[i]) alpha[i] = a;
       }
     }
-    const Dib = Math.max(40, Math.hypot(ink[0] - bg[0], ink[1] - bg[1], ink[2] - bg[2]));
-    const rows = new Float32Array(ch);
-    for (let i = 0; i < n; i++) {
-      const di = Math.hypot(d[i*4] - ink[0], d[i*4+1] - ink[1], d[i*4+2] - ink[2]);
-      const a = a1[i]*Math.max(0, Math.min(1, 1 - (di - 0.45*Dib)/(0.35*Dib)));
-      d[i*4+3] = a*255; rows[(i/cw)|0] += a;
-    }
+    let x0 = cw, y0 = ch, x1 = -1, y1 = -1, lsum = 0, asum = 0;
+    for (let i = 0; i < n; i++) { d[i*4 + 3] = Math.round(alpha[i]*255); lsum += lum[i]*alpha[i]; asum += alpha[i];
+      if (alpha[i] > 0.1) { const x = i % cw, y = (i/cw)|0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+    if (x1 < x0 || y1 - y0 < 0.3*L) throw 0;
     g.putImageData(im, 0, 0);
-    // bands of rows with ink, joined across small gaps; the band with the most ink is the line
-    const runs = []; let start = -1;
-    for (let y = 0; y <= ch; y++) { const on = y < ch && rows[y]/cw > 0.012;
-      if (on && start < 0) start = y; if (!on && start >= 0) { runs.push([start, y]); start = -1; } }
-    const merged = []; for (const r of runs) { const p = merged[merged.length - 1]; if (p && r[0] - p[1] < ch*0.06) p[1] = r[1]; else merged.push([...r]); }
-    if (!merged.length) throw 0;
-    const inkOf = ([y0, y1]) => { let t = 0; for (let y = y0; y < y1; y++) t += rows[y]; return t; };
-    const [y0, y1] = merged.reduce((m, r) => inkOf(r) > inkOf(m) ? r : m);
-    let x0 = cw, x1 = 0;
-    for (let y = y0; y < y1; y++) for (let x = 0; x < cw; x++) if (d[(y*cw + x)*4 + 3] > 60) { if (x < x0) x0 = x; if (x > x1) x1 = x; }
-    if (x1 <= x0) throw 0;
-    const lc = document.createElement("canvas"); lc.width = x1 - x0 + 1; lc.height = y1 - y0;
+    const lc = document.createElement("canvas"); lc.width = x1 - x0 + 1; lc.height = y1 - y0 + 1;
     lc.getContext("2d").drawImage(c, x0, y0, lc.width, lc.height, 0, 0, lc.width, lc.height);
-    let inkSum = 0; for (let y = y0; y < y1; y++) for (let x = x0; x <= x1; x++) inkSum += d[(y*cw + x)*4 + 3]/255;
-    lc.ink = ink; lc.cands = cands; lc.srcH = (y1 - y0)/k/ih; lc.density = inkSum/(lc.width*lc.height); out = lc;
+    lc.lum = lsum/Math.max(1, asum);                     // how light the lettering is, for the shadow it needs
+    out = lc;
   } catch (e) { out = null; }
-  letCache.set(key, out); return out;
+  memo.set(key, out); return out;
 }
-// the lifted lines laid end to end down the spine (title from the top, surname at the foot); false if there's nothing to lay
-function drawLettering(g, x, y, w, h, b, shade) {
+// the lifted lines laid end to end down the spine (title from the top, author at the foot); false if there's nothing to
+// lay yet (later() is called when there is)
+function drawLettering(g, x, y, w, h, b, shade, later) {
   const L = b.spineText, src = coverSrc(b);
-  if (!L || L.v !== LET_V || L.cover !== src || !L.title) return false;
+  if (!L || L.v !== LET_V || L.cover !== coverKey(src) || !L.title) return false;
   const img = pic(bigCover(src)) || pic(src); if (!img) return false;
-  const lines = [];
-  const boxes = L.title.map(t => ({ ...t, b: [...t.b] }));
-  for (let i = 1; i < boxes.length; i++) { const p = boxes[i - 1].b, q = boxes[i].b;
-    if (p[3] > q[1]) { const m = (p[3] + q[1])/2; p[3] = m; q[1] = m; } }
-  // a title is printed in one colour; the artwork behind it changes from line to line. So the lettering's colour is the
-  // one found in the most lines, and every line is lifted in it.
-  const first = boxes.filter(t => !t.maybe).map(t => liftLettering(img, t.b));
-  if (first.some(c => !c)) return false;                    // a word of the title couldn't be lifted: keep the printed font
-  let hint = null;
-  if (first.length > 1) {
-    const near = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) < 60;
-    let best = -1;
-    for (const c of first) for (const cand of c.cands) {
-      const hits = first.filter(o => o.cands.some(x => near(x.col, cand.col))).length, sc = hits + cand.score*0.5;
-      if (sc > best) { best = sc; hint = cand.col; }
-    }
-  }
-  const got = boxes.map(t => ({ ...t, c: liftLettering(img, t.b, hint) }));
-  if (got.some(t => !t.maybe && !t.c)) return false;
-  const sure = got.filter(t => !t.maybe), inkRef = sure[0].c.ink;
-  for (const t of got) {
-    const c = t.c; if (!c) continue;
-    // a small word on a line of its own is kept only if it is type in the title's colour, not a scrap of artwork
-    const hRef = sure.map(t2 => t2.c.srcH).sort((p, q) => p - q)[sure.length >> 1];
-    if (t.maybe && (c.width/c.height < 0.4 || c.width/c.height > 9 || c.srcH < 0.25*hRef || c.density < 0.12
-      || Math.hypot(...c.ink.map((v, i) => v - inkRef[i])) > 60)) continue;
-    lines.push(c);
-  }
+  const got = letLifted(img, [...L.title, ...(L.author || [])], later); if (!got) return false;
+  const lines = got.slice(0, L.title.length), author = got.slice(L.title.length).filter(Boolean);
+  if (lines.some(c => !c)) return false;                    // a line of the title couldn't be lifted: keep the printed font
   const lay = (cans, from, to, thMax, alignEnd) => {
     let th = thMax; const gap = () => th*0.32;
     const len = () => cans.reduce((s, c) => s + c.width*th/c.height, 0) + gap()*(cans.length - 1);
     if (len() > to - from) th *= (to - from)/len();
-    g.save(); g.translate(x + w/2, y); g.rotate(Math.PI/2); g.shadowColor = shade; g.shadowBlur = Math.max(2, th*0.12);
+    g.save(); g.translate(x + w/2, y); g.rotate(Math.PI/2); g.shadowBlur = Math.max(3, th*0.16);
     let cur = alignEnd ? to - len() : from;
-    for (const c of cans) { const lw = c.width*th/c.height; g.drawImage(c, cur, -th/2, lw, th); cur += lw + gap(); }
+    for (const c of cans) {
+      // dark lettering gets a pale glow and light lettering a shadow, so it reads on whatever the spine is
+      g.shadowColor = c.lum < 105 ? "rgba(255,246,228,.6)" : c.lum > 150 ? "rgba(0,0,0,.65)" : shade;
+      const lw = c.width*th/c.height; g.drawImage(c, cur, -th/2, lw, th); g.drawImage(c, cur, -th/2, lw, th); cur += lw + gap(); }
     g.restore();
   };
-  const ac = L.author && liftLettering(img, L.author), author = ac ? [ac] : null;
-  lay(lines, h*0.07, h*(author ? 0.72 : 0.93), w*0.66, false);
-  if (author) lay(author, h*0.76, h*0.94, w*0.42, true);
+  lay(lines, h*0.07, h*(author.length ? 0.72 : 0.93), w*0.66, false);
+  if (author.length) lay(author, h*0.76, h*0.94, w*0.42, true);
   return true;
 }
-function drawSpine(g, x, y, w, h, b) {
+// a title set down a spine in full, never cut short: on one line, smaller if it must be; or on two lines side by side
+// when that lets the letters be bigger. Draws centred on the spine's axis (already turned to run down it).
+function spineTitle(g, title, avail, fsMax, fsMin, w) {
+  const font = fs => `600 ${fs}px "Cormorant Garamond", Georgia, serif`, width = (t, fs) => { g.font = font(fs); return g.measureText(t).width; };
+  let fs = fsMax;
+  while (width(title, fs) > avail && fs > fsMin) fs--;
+  let lines = [title];
+  if (width(title, fs) > avail) {
+    const one = fs*avail/width(title, fs), words = title.split(/\s+/);
+    let two = null;
+    for (let i = 1; i < words.length; i++) { const a = words.slice(0, i).join(" "), c = words.slice(i).join(" "), m = Math.max(width(a, 20), width(c, 20));
+      if (!two || m < two.m) two = { m, lines: [a, c] }; }
+    const f2 = two ? Math.min(w*0.34, fsMax, 20*avail/two.m) : 0;
+    if (f2 > one) { fs = f2; lines = two.lines; } else fs = one;
+  }
+  g.font = font(Math.max(7, fs)); g.textBaseline = "middle";
+  if (lines.length === 1) g.fillText(lines[0], 0, 1);
+  else { g.fillText(lines[0], 0, 1 - 0.55*fs); g.fillText(lines[1], 0, 1 + 0.55*fs); }
+}
+function drawSpine(g, x, y, w, h, b, later) {
   if (b.loan) return drawSlip(g, x, y, w, h, b);
   const st = styleOf(b), wrapImg = st === WRAP && pic(coverSrc(b));
   if (wrapImg) {
@@ -2132,17 +2413,15 @@ function drawSpine(g, x, y, w, h, b) {
     gr.addColorStop(0, "rgba(0,0,0,.30)"); gr.addColorStop(.3, "rgba(255,255,255,.06)"); gr.addColorStop(.7, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.28)");
     g.fillStyle = gr; g.fillRect(x, y, w, h);
     const ink = edgeInk(wrapImg, coverSrc(b), sw), shade = ink === "#1c1a17" ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.55)";
-    if (drawLettering(g, x, y, w, h, b, shade)) return;  // the cover's own lettering, when it has been found
+    if (drawLettering(g, x, y, w, h, b, shade, later)) return;   // the cover's own lettering, when it has been found
+    const last = w > 22 && (b.author || "").split(/\s+/).pop() || "";
+    g.font = `600 ${Math.min(w*0.34, 20)}px "Cormorant Garamond", Georgia, serif`;
+    const lastW = last ? g.measureText(last.toUpperCase()).width + h*0.03 : 0;      // the title stops short of the surname
     g.save(); g.translate(x + w/2, y + h*0.08); g.rotate(Math.PI/2);
-    const title = b.title.replace(/\s*\(.*?\)\s*$/, ""), avail = h*0.66;
-    let fs = Math.min(w*0.52, 42); g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`;
-    while (g.measureText(title).width > avail && fs > Math.min(w*0.40, 28)) { fs -= 1; g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`; }
-    let tt = title;
-    if (g.measureText(tt).width > avail) { let n = title.length; while (n > 3 && g.measureText(title.slice(0, n).trimEnd() + "…").width > avail) n--; tt = title.slice(0, n).trimEnd() + "…"; }
-    g.textBaseline = "middle"; g.shadowColor = shade; g.shadowBlur = Math.max(2, fs*0.18); g.fillStyle = ink; g.fillText(tt, 0, 1);
+    const fs = Math.min(w*0.52, 42); g.shadowColor = shade; g.shadowBlur = Math.max(2, fs*0.18); g.fillStyle = ink;
+    spineTitle(g, b.title.replace(/\s*\(.*?\)\s*$/, ""), Math.min(h*0.66, h*0.85 - lastW), fs, Math.min(w*0.40, 28), w);
     g.restore();
-    const last = (b.author || "").split(/\s+/).pop() || "";
-    if (last && w > 22) {
+    if (last) {
       g.save(); g.translate(x + w/2, y + h*0.93); g.rotate(Math.PI/2);
       g.font = `600 ${Math.min(w*0.34, 20)}px "Cormorant Garamond", Georgia, serif`; g.textAlign = "right"; g.textBaseline = "middle";
       g.shadowColor = shade; g.shadowBlur = 3; g.fillStyle = ink; g.globalAlpha = .9; g.fillText(last.toUpperCase(), 0, 0); g.restore();
@@ -2170,17 +2449,14 @@ function drawSpine(g, x, y, w, h, b) {
     const panel = [x + w*0.14, y + h*0.16, w*0.72, h*0.5];
     g.fillStyle = "rgba(20,12,8,.82)"; g.fillRect(...panel); g.strokeStyle = gilt; g.lineWidth = 2; g.strokeRect(...panel);
   }
+  const last = w > 22 && (b.author || "").split(/\s+/).pop() || "";
+  g.font = `600 ${Math.min(w*0.36, 22)}px "Cormorant Garamond", Georgia, serif`;
+  const lastW = last ? g.measureText(last.toUpperCase()).width + h*0.03 : 0;
   g.save(); g.translate(x + w/2, y + h*(style === 1 ? 0.18 : 0.13)); g.rotate(Math.PI/2);
-  const title = b.title.replace(/\s*\(.*?\)\s*$/, ""), avail = h*(style === 1 ? 0.46 : 0.58);
-  let fs = Math.min(w*0.56, 44); g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`;
-  while (g.measureText(title).width > avail && fs > Math.min(w*0.42, 30)) { fs -= 1; g.font = `600 ${fs}px "Cormorant Garamond", Georgia, serif`; }
-  let tt = title;                                      // too long: shorten to whole characters and end with an ellipsis
-  if (g.measureText(tt).width > avail) { let n = title.length; while (n > 3 && g.measureText(title.slice(0, n).trimEnd() + "…").width > avail) n--;
-    tt = title.slice(0, n).trimEnd() + "…"; }
-  g.fillStyle = style === 1 ? gilt : ink; g.textBaseline = "middle"; g.fillText(tt, 0, 1);
+  g.fillStyle = style === 1 ? gilt : ink;
+  spineTitle(g, b.title.replace(/\s*\(.*?\)\s*$/, ""), style === 1 ? h*0.46 : Math.min(h*0.58, h*0.73 - lastW), Math.min(w*0.56, 44), Math.min(w*0.42, 30), w);
   g.restore();
-  const last = (b.author || "").split(/\s+/).pop() || "";
-  if (last && w > 22) {
+  if (last) {
     g.save(); g.translate(x + w/2, y + h*0.86); g.rotate(Math.PI/2);
     const fa = Math.min(w*0.36, 22); g.font = `600 ${fa}px "Cormorant Garamond", Georgia, serif`;
     g.fillStyle = style === 1 ? gilt : ink; g.globalAlpha = .82; g.textAlign = "right"; g.textBaseline = "middle";
@@ -2327,7 +2603,9 @@ function buildShelves() {
     if (at.x + w > AW) { at.x = 0; at.y += CELL_H; }
     if (at.kx + cw > AW) { at.kx = 0; at.ky += COVER_H; }
     if (at.y + CELL_H > AH || at.ky + COVER_H > AH) newAtlas();
-    drawSpine(at.g, at.x, at.y, w, CELL_H, s.b);
+    { const a = at, sx = at.x, sy = at.y;                // drawn again when its lettering is lifted
+      const again = () => { if (!a.mesh || a.mesh.userData.gone) return; drawSpine(a.g, sx, sy, w, CELL_H, s.b, again); a.tex.needsUpdate = true; };
+      s.respine = again; drawSpine(at.g, at.x, at.y, w, CELL_H, s.b, again); }
     s.cell = [at.x/AW, 1 - (at.y + CELL_H)/AH, (at.x + w)/AW, 1 - at.y/AH];
     s.ccell = null;
     const src = s.lent ? "" : coverSrc(s.b);
@@ -2337,9 +2615,9 @@ function buildShelves() {
       const img = pic(src, () => {                       // arrived after the shelves were built: paint it in and point the face at it
         if (!a.mesh || a.mesh.userData.gone) return;
         paint(pics.get(src).img); a.ktex.needsUpdate = true; coverUv(s);
-        if (styleOf(s.b) === WRAP) { drawSpine(a.g, sx, sy, w, CELL_H, s.b); a.tex.needsUpdate = true; } });
+        if (styleOf(s.b) === WRAP) s.respine(); });
       if (styleOf(s.b) === WRAP && s.b.spineText && s.b.spineText.title && !pic(bigCover(src)))
-        pic(bigCover(src), () => { if (!a.mesh || a.mesh.userData.gone) return; drawSpine(a.g, sx, sy, w, CELL_H, s.b); a.tex.needsUpdate = true; });
+        pic(bigCover(src), () => s.respine());
       if (img) paint(img);
       at.kx += cw + 2;
     }
@@ -4253,7 +4531,7 @@ async function letterQueue() {
       try { img = await loadImg(bigCover(src)); } catch (e) { try { img = await loadImg(src); } catch (e2) {} }
       if (!img) { b.spineText = { cover: coverKey(src), v: LET_V, title: null, author: null }; continue; }
       try { b.spineText = await findLettering(b, img); }
-      catch (e) { return; }                               // the reader couldn't load (offline): try again another time
+      catch (e) { b.spineText = { cover: coverKey(src), v: LET_V, title: null, author: null }; }   // a picture that can't be read
       if (b.spineText.title) fresh++;
       if (fresh && fresh % (library.length > 150 ? 24 : 6) === 0 && !lift) { saveLib(); rebuildKeep(openBook ? openBook.b.id : null); }
     }
